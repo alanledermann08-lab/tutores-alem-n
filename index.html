@@ -1,0 +1,1767 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tutores — Sistema de Registro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f3;color:#1a1a1a;font-size:14px}
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:220px;background:#fff;border-right:1px solid #e5e5e5;display:flex;flex-direction:column;z-index:100}
+.logo{padding:20px 20px 16px;border-bottom:1px solid #e5e5e5}
+.logo h1{font-size:15px;font-weight:600}.logo p{font-size:11px;color:#888;margin-top:2px}
+nav{padding:12px 0;flex:1;overflow-y:auto}
+.nav-section{padding:4px 20px 2px;font-size:10px;font-weight:600;color:#aaa;letter-spacing:.8px;text-transform:uppercase;margin-top:8px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:8px 20px;cursor:pointer;color:#555;font-size:13px;border-right:3px solid transparent;transition:all .15s}
+.nav-item:hover{background:#f9f9f9;color:#1a1a1a}
+.nav-item.active{color:#2563eb;background:#eff6ff;border-right-color:#2563eb;font-weight:500}
+.sidebar-footer{padding:16px 20px;border-top:1px solid #e5e5e5}
+.main{margin-left:220px;min-height:100vh}
+.topbar{background:#fff;border-bottom:1px solid #e5e5e5;padding:0 28px;height:52px;display:flex;align-items:center;justify-content:space-between}
+.topbar h2{font-size:15px;font-weight:600}
+.topbar-actions{display:flex;gap:8px;align-items:center}
+.btn{padding:7px 14px;border-radius:7px;border:1px solid #e5e5e5;background:#fff;font-size:13px;cursor:pointer;color:#1a1a1a;transition:all .15s}
+.btn:hover{background:#f5f5f5}
+.btn-primary{background:#2563eb;color:#fff;border-color:#2563eb}
+.btn-primary:hover{background:#1d4ed8}
+.content{padding:24px 28px}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
+.stat-card{background:#fff;border:1px solid #e5e5e5;border-radius:10px;padding:16px}
+.stat-label{font-size:11px;color:#888;margin-bottom:6px;font-weight:500}
+.stat-value{font-size:22px;font-weight:600}
+.stat-sub{font-size:11px;color:#888;margin-top:3px}
+.card{background:#fff;border:1px solid #e5e5e5;border-radius:10px;overflow:hidden;margin-bottom:20px}
+.card-header{padding:14px 18px;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;justify-content:space-between}
+.card-header h3{font-size:13px;font-weight:600}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;padding:10px 18px;font-size:11px;font-weight:600;color:#888;background:#fafafa;border-bottom:1px solid #f0f0f0;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
+td{padding:11px 18px;font-size:13px;border-bottom:1px solid #f5f5f5}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#fafafa}
+.badge{display:inline-flex;align-items:center;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:500;white-space:nowrap}
+.badge-green{background:#dcfce7;color:#166534}
+.badge-blue{background:#dbeafe;color:#1e40af}
+.badge-gray{background:#f3f4f6;color:#374151}
+.badge-purple{background:#ede9fe;color:#5b21b6}
+.badge-orange{background:#fed7aa;color:#c2410c}
+.avatar{width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;margin-right:8px;flex-shrink:0}
+.av-blue{background:#dbeafe;color:#1e40af}
+.av-purple{background:#ede9fe;color:#5b21b6}
+.av-green{background:#dcfce7;color:#166534}
+.av-orange{background:#fed7aa;color:#c2410c}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.form-group{display:flex;flex-direction:column;gap:5px}
+.form-group.full{grid-column:1/-1}
+.form-group label{font-size:11px;font-weight:600;color:#666;text-transform:uppercase;letter-spacing:.5px}
+.form-group input,.form-group select,.form-group textarea{padding:9px 12px;border:1px solid #e5e5e5;border-radius:7px;font-size:13px;color:#1a1a1a;outline:none;background:#fff}
+.form-group input:focus,.form-group select:focus{border-color:#2563eb}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:1000;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;border-radius:12px;width:540px;max-width:95vw;max-height:90vh;overflow-y:auto}
+.modal-header{padding:18px 20px;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:1}
+.modal-header h3{font-size:14px;font-weight:600}
+.modal-close{width:28px;height:28px;border-radius:6px;border:none;background:#f5f5f5;cursor:pointer;font-size:16px;color:#888}
+.modal-body{padding:20px}
+.modal-footer{padding:14px 20px;border-top:1px solid #f0f0f0;display:flex;justify-content:flex-end;gap:8px;position:sticky;bottom:0;background:#fff}
+.amount{font-family:'SF Mono',Consolas,monospace;font-size:12px}
+.filter-row{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+.filter-row select,.filter-row input{padding:7px 12px;border:1px solid #e5e5e5;border-radius:7px;font-size:13px;background:#fff;color:#1a1a1a;outline:none}
+.price-preview{background:#f0f7ff;border:1px solid #bfdbfe;border-radius:8px;padding:14px;margin-top:12px}
+.pp-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:8px}
+.pp-item{text-align:center}
+.pp-label{font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:.5px}
+.pp-val{font-size:16px;font-weight:600;margin-top:2px}
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap');
+.login-screen{display:flex;min-height:100vh;background:#0f1117;font-family:'DM Sans',sans-serif}
+.login-left{flex:1;display:flex;flex-direction:column;justify-content:center;padding:60px;position:relative;overflow:hidden}
+.login-left::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 30% 50%,rgba(37,99,235,0.18) 0%,transparent 70%),radial-gradient(ellipse 50% 80% at 80% 20%,rgba(139,92,246,0.1) 0%,transparent 60%);pointer-events:none}
+.login-left-content{position:relative;z-index:1;max-width:480px}
+.login-brand{display:flex;align-items:center;gap:12px;margin-bottom:48px}
+.login-brand-icon{width:40px;height:40px;background:linear-gradient(135deg,#2563eb,#7c3aed);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px}
+.login-brand-name{font-size:15px;font-weight:600;color:#fff;letter-spacing:.3px}
+.login-heading{font-family:'DM Serif Display',serif;font-size:52px;line-height:1.08;color:#fff;margin-bottom:20px}
+.login-heading em{font-style:italic;color:#93c5fd}
+.login-desc{font-size:16px;color:rgba(255,255,255,0.45);line-height:1.65;max-width:360px}
+.login-stats{display:flex;gap:32px;margin-top:48px}
+.login-stat-val{font-size:28px;font-weight:600;color:#fff}
+.login-stat-lbl{font-size:12px;color:rgba(255,255,255,0.4);margin-top:2px;letter-spacing:.3px}
+.login-dots{display:flex;gap:6px;margin-top:48px}
+.login-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15)}
+.login-dot:first-child{background:#2563eb;width:20px;border-radius:3px}
+.login-right{width:440px;background:#fff;display:flex;flex-direction:column;justify-content:center;padding:56px 48px;position:relative}
+.login-right::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,#2563eb,#7c3aed)}
+.login-box-title{font-family:'DM Serif Display',serif;font-size:28px;color:#0f1117;margin-bottom:6px}
+.login-box-sub{font-size:13px;color:#9ca3af;margin-bottom:32px}
+.login-role-label{font-size:10px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
+.role-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:0}
+.role-btn{padding:14px 12px;border:1.5px solid #e5e7eb;border-radius:12px;background:#fff;cursor:pointer;text-align:left;transition:all .18s;display:flex;align-items:center;gap:12px}
+.role-btn:hover{border-color:#2563eb;background:#eff6ff;transform:translateY(-1px);box-shadow:0 4px 12px rgba(37,99,235,.12)}
+.role-btn.selected{border-color:#2563eb;background:#eff6ff;box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+.role-btn .icon{font-size:20px;flex-shrink:0;width:36px;height:36px;background:#f3f4f6;border-radius:8px;display:flex;align-items:center;justify-content:center;transition:all .18s}
+.role-btn.selected .icon,.role-btn:hover .icon{background:#dbeafe}
+.role-btn-text .name{font-size:13px;font-weight:600;color:#111827}
+.role-btn-text .sub{font-size:11px;color:#9ca3af;margin-top:1px}
+.tutor-card{background:#fff;border:1px solid #e5e5e5;border-radius:10px;padding:16px;margin-bottom:12px}
+.tutor-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.tutor-name{display:flex;align-items:center;font-weight:500;font-size:14px}
+.tutor-stats{display:flex;gap:16px}
+.tutor-stat .n{font-size:18px;font-weight:600}
+.tutor-stat .l{font-size:10px;color:#888;margin-top:1px}
+.alert-blue{background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af;padding:12px 16px;border-radius:8px;font-size:13px;margin-bottom:16px}
+.pw-wrap input{width:100%;padding:10px 12px;border:1px solid #e5e5e5;border-radius:7px;font-size:14px;outline:none;margin-bottom:10px}
+.pw-wrap input:focus{border-color:#2563eb}
+.err-msg{color:#dc2626;font-size:12px;margin-bottom:10px;display:none}
+@media(max-width:768px){.login-left{display:none}.login-right{width:100%;padding:40px 28px}}
+</style>
+</head>
+<body>
+
+<div id="loadingScreen" style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:#0f1117;flex-direction:column;gap:16px">
+  <div style="width:40px;height:40px;background:linear-gradient(135deg,#2563eb,#7c3aed);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;animation:pulse 1.4s ease-in-out infinite">📚</div>
+  <div style="font-size:13px;color:rgba(255,255,255,0.4);letter-spacing:.3px">Conectando...</div>
+</div>
+<style>@keyframes spin{to{transform:rotate(360deg)}}@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.7;transform:scale(.92)}}</style>
+
+<div id="loginScreen" style="display:none" class="login-screen">
+
+  <!-- Left panel -->
+  <div class="login-left">
+    <div class="login-left-content">
+      <div class="login-heading">Tutores<br><em>Alemán</em></div>
+    </div>
+  </div>
+
+  <!-- Right panel -->
+  <div class="login-right">
+    <div class="login-box-title">Bienvenido</div>
+    <div class="login-box-sub">Selecciona tu rol para continuar</div>
+    <div class="login-role-label">Ingresar como</div>
+
+    <div class="role-btns" style="margin-bottom:8px">
+      <div class="role-btn" id="rbsuperadmin" onclick="selectRole('superadmin')">
+        <div class="icon">⚙️</div>
+        <div class="role-btn-text"><div class="name">Administrador</div><div class="sub">Alan</div></div>
+      </div>
+      <div class="role-btn" id="rbcoordinador" onclick="selectRole('coordinador')">
+        <div class="icon">🏫</div>
+        <div class="role-btn-text"><div class="name">Coordinador</div><div class="sub">Por colegio</div></div>
+      </div>
+    </div>
+    <div class="role-btns" style="margin-bottom:24px">
+      <div class="role-btn" id="rbtutor" onclick="selectRole('tutor')">
+        <div class="icon">📖</div>
+        <div class="role-btn-text"><div class="name">Tutor</div><div class="sub">Registro clases</div></div>
+      </div>
+      <div class="role-btn" id="rbapoderado" onclick="selectRole('apoderado')">
+        <div class="icon">👨‍👩‍👧</div>
+        <div class="role-btn-text"><div class="name">Apoderado</div><div class="sub">Ver resumen</div></div>
+      </div>
+    </div>
+
+    <div id="adminForm" style="display:none">
+      <div style="height:1px;background:#f3f4f6;margin-bottom:20px"></div>
+      <div class="pw-wrap"><input type="password" id="adminPw" placeholder="Contraseña" onkeydown="if(event.key==='Enter')enterAdmin()"></div>
+      <p class="err-msg" id="pwErr">Contraseña incorrecta</p>
+      <button class="btn btn-primary" style="width:100%;padding:11px;border-radius:10px;font-size:14px;font-weight:600" onclick="enterAdmin()">Ingresar →</button>
+    </div>
+
+    <div id="coordForm" style="display:none">
+      <div style="height:1px;background:#f3f4f6;margin-bottom:20px"></div>
+      <div class="form-group" style="margin-bottom:12px"><label>Colegio</label>
+        <select id="coordColegio"><option value="">Seleccionar...</option></select>
+      </div>
+      <div class="pw-wrap"><input type="password" id="coordPw" placeholder="Contraseña" onkeydown="if(event.key==='Enter')enterCoord()"></div>
+      <p class="err-msg" id="coordErr" style="display:none">Contraseña incorrecta</p>
+      <button class="btn btn-primary" style="width:100%;padding:11px;border-radius:10px;font-size:14px;font-weight:600" onclick="enterCoord()">Ingresar →</button>
+    </div>
+
+    <div id="userForm" style="display:none">
+      <div style="height:1px;background:#f3f4f6;margin-bottom:20px"></div>
+      <div class="form-group" style="margin-bottom:12px"><label>Colegio</label>
+        <select id="userColegio" onchange="onUserColegioChange()"><option value="">Seleccionar...</option></select>
+      </div>
+      <div class="form-group" style="margin-bottom:12px;position:relative"><label>Nombre</label>
+        <input type="text" id="loginUserInput" placeholder="Escribe tu nombre..." autocomplete="off"
+          oninput="filterLoginUsers(this.value)"
+          onfocus="filterLoginUsers(this.value)"
+          style="padding:9px 12px;border:1px solid #e5e5e5;border-radius:7px;font-size:13px;width:100%;outline:none">
+        <div id="loginUserDropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #e5e5e5;border-radius:7px;box-shadow:0 4px 12px rgba(0,0,0,.1);z-index:200;max-height:180px;overflow-y:auto;margin-top:2px"></div>
+        <input type="hidden" id="loginUser" value="">
+      </div>
+      <div class="pw-wrap" style="margin-bottom:4px"><input type="password" id="userPw" placeholder="Contraseña" onkeydown="if(event.key==='Enter')enterUser()"></div>
+      <p class="err-msg" id="userErr" style="display:none">Contraseña incorrecta</p>
+      <button class="btn btn-primary" style="width:100%;padding:11px;border-radius:10px;font-size:14px;font-weight:600" onclick="enterUser()">Ingresar →</button>
+    </div>
+
+    <div style="text-align:center;margin-top:28px;padding-top:20px;border-top:1px solid #f3f4f6">
+      <span onclick="resetDB()" style="font-size:11px;color:#d1d5db;cursor:pointer;text-decoration:underline">Resetear datos</span>
+    </div>
+  </div>
+
+</div>
+
+<div id="app" style="display:none">
+<div class="sidebar">
+  <div class="logo"><h1 id="logoTitle">Tutores</h1><p id="sidebarRole"></p></div>
+  <nav id="sidebarNav"></nav>
+  <div class="sidebar-footer">
+    <div id="sidebarUser" style="font-weight:500;color:#555;font-size:12px;margin-bottom:4px"></div>
+    <div id="sidebarColegio" style="font-size:11px;color:#888;margin-bottom:4px"></div>
+    <div onclick="logout()" style="cursor:pointer;color:#aaa;font-size:11px">Cerrar sesión</div>
+  </div>
+</div>
+<div class="main">
+  <div class="topbar"><h2 id="pageTitle">Dashboard</h2><div class="topbar-actions" id="topbarActions"></div></div>
+  <div id="viewContainer"></div>
+</div>
+</div>
+
+<div class="modal-overlay" id="claseModal">
+<div class="modal">
+  <div class="modal-header"><h3>Registrar clase</h3><button class="modal-close" onclick="closeModal()">×</button></div>
+  <div class="modal-body">
+    <div class="form-grid">
+      <div class="form-group" id="fColegioBox"><label>Colegio</label>
+        <select id="fColegio" onchange="onModalColegioChange()"></select>
+      </div>
+      <div class="form-group"><label>Fecha</label><input type="date" id="fFecha"></div>
+      <div class="form-group"><label>Materia</label>
+        <select id="fMateria"><option>Matemáticas</option><option>Inglés</option><option>Biología</option><option>Física</option><option>Historia</option><option>Química</option><option>Alemán</option><option>Otro</option></select>
+      </div>
+      <div class="form-group"><label>Apoderado</label><select id="fApo" onchange="onApoChange()"><option value="">Seleccionar...</option></select></div>
+      <div class="form-group"><label>Código pareja</label><input type="text" id="fCod" readonly style="background:#fafafa;color:#888"></div>
+      <div class="form-group"><label>Tipo</label>
+        <select id="fTipo" onchange="recalc()">
+          <option value="aleman_sede">Clásico</option>
+          <option value="abi">ABI</option>
+          <option value="universitaria">Universitaria</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Alumnos</label>
+        <select id="fAlumnos" onchange="recalc()">
+          <option value="1">1 alumno</option><option value="2">2 (grupal)</option>
+          <option value="3">3 (grupal)</option><option value="4">4 (grupal)</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Modalidad</label>
+        <select id="fMod" onchange="recalc()"><option value="presencial">Presencial</option><option value="online">Online</option></select>
+      </div>
+      <div class="form-group"><label>Duración</label>
+        <select id="fDur" onchange="recalc()">
+          <option value="0.5">30 min</option><option value="0.75">45 min</option>
+          <option value="1" selected>1 hora</option><option value="1.5">1:30 hr</option>
+          <option value="2">2 horas</option><option value="2.5">2:30 hr</option>
+        </select>
+      </div>
+    </div>
+    <div class="price-preview">
+      <div style="font-size:11px;font-weight:600;color:#1e40af;text-transform:uppercase;letter-spacing:.5px">Precios calculados</div>
+      <div id="ppGrid" class="pp-grid">
+        <div class="pp-item"><div class="pp-label">Apoderado paga</div><div class="pp-val" style="color:#1e40af" id="ppApo">-</div></div>
+        <div class="pp-item"><div class="pp-label">Tutor recibe</div><div class="pp-val" style="color:#166534" id="ppTutor">-</div></div>
+        <div class="pp-item" id="ppMargenBox"><div class="pp-label">Comisión</div><div class="pp-val" style="color:#c2410c" id="ppMargen">-</div></div>
+      </div>
+    </div>
+    <div class="form-grid" style="margin-top:14px">
+      <div class="form-group" id="precioApoBox"><label>Precio apoderado $</label><input type="number" id="fPrecioApo"></div>
+      <div class="form-group" id="sueldoBox"><label>Sueldo tutor $</label><input type="number" id="fSueldo"></div>
+      <div class="form-group full"><label>Observaciones</label><textarea id="fObs" rows="2" style="resize:none"></textarea></div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn" onclick="closeModal()">Cancelar</button>
+    <button class="btn btn-primary" onclick="saveClase()">Guardar clase</button>
+  </div>
+</div>
+</div>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyBAczHRyadAa9djxWRt2AeVLtAKRCUESMM",
+  authDomain: "tutores-aleman.firebaseapp.com",
+  databaseURL: "https://tutores-aleman-default-rtdb.firebaseio.com",
+  projectId: "tutores-aleman",
+  storageBucket: "tutores-aleman.firebasestorage.app",
+  messagingSenderId: "796317779203",
+  appId: "1:796317779203:web:0e18f1ee768e364b6bd536"
+};
+firebase.initializeApp(firebaseConfig);
+const fbDB = firebase.database();
+
+const ADMIN_PW = "alan2024";
+const COORD_PW = "coord2024";
+const TUTOR_PW = "tutor2024";
+const APO_PW = "apod2024";
+const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+const SEED_DATA = {clases:[
+    {id:1,fecha:'2025-09-01',materia:'Matemáticas',apoderado:'Alejandra Muñoz',tutor:'Flo Vera',codigo:'AF1',colegio:'aleman',tipo:'aleman_sede',alumnos:1,modalidad:'presencial',duracion:1,precioApo:19700,sueldo:14700,obs:''},
+    {id:2,fecha:'2025-09-01',materia:'Matemáticas',apoderado:'Claudia',tutor:'Arantza',codigo:'CA1',colegio:'aleman',tipo:'aleman_sede',alumnos:1,modalidad:'presencial',duracion:1,precioApo:19700,sueldo:14700,obs:''},
+    {id:3,fecha:'2025-09-03',materia:'Matemáticas abi',apoderado:'Eileen Fuchs',tutor:'Michael Nickl',codigo:'EM1',colegio:'aleman',tipo:'abi',alumnos:1,modalidad:'presencial',duracion:1,precioApo:22000,sueldo:17700,obs:''},
+    {id:4,fecha:'2025-09-03',materia:'Matemáticas',apoderado:'Claudia',tutor:'Arantza',codigo:'CA1',colegio:'aleman',tipo:'aleman_sede',alumnos:1,modalidad:'presencial',duracion:1,precioApo:19700,sueldo:14700,obs:''},
+    {id:5,fecha:'2025-09-05',materia:'Matemáticas abi',apoderado:'Veronica Rosas',tutor:'Felipe Guijon',codigo:'VF2',colegio:'aleman',tipo:'abi',alumnos:1,modalidad:'presencial',duracion:1.5,precioApo:33000,sueldo:26550,obs:''},
+    {id:6,fecha:'2025-09-10',materia:'Matemáticas abi',apoderado:'Eileen Fuchs',tutor:'Michael Nickl',codigo:'EM1',colegio:'aleman',tipo:'abi',alumnos:1,modalidad:'online',duracion:1,precioApo:21000,sueldo:16500,obs:''},
+    {id:7,fecha:'2025-09-24',materia:'Matemáticas abi',apoderado:'Eileen Fuchs',tutor:'Florencia Espinoza',codigo:'EF1',colegio:'aleman',tipo:'abi',alumnos:1,modalidad:'presencial',duracion:1,precioApo:22000,sueldo:17700,obs:''},
+    {id:8,fecha:'2025-09-24',materia:'Matemáticas abi',apoderado:'Eileen Fuchs',tutor:'Florencia Espinoza',codigo:'EF1',colegio:'aleman',tipo:'abi',alumnos:1,modalidad:'presencial',duracion:1,precioApo:22000,sueldo:17700,obs:''},
+    {id:9,fecha:'2025-09-25',materia:'Inglés',apoderado:'Ana Maria',tutor:'Amelia Soto',codigo:'AA1',colegio:'aleman',tipo:'aleman_sede',alumnos:1,modalidad:'online',duracion:1,precioApo:18600,sueldo:13500,obs:''},
+    {id:10,fecha:'2025-09-25',materia:'Matemáticas',apoderado:'Eileen Fuchs',tutor:'Florencia Espinoza',codigo:'EF1',colegio:'aleman',tipo:'abi',alumnos:1,modalidad:'presencial',duracion:1,precioApo:22000,sueldo:17700,obs:''},
+    {id:11,fecha:'2025-09-25',materia:'Matemáticas abi',apoderado:'Eileen Fuchs',tutor:'Florencia Espinoza',codigo:'EF1',colegio:'aleman',tipo:'abi',alumnos:1,modalidad:'presencial',duracion:0.75,precioApo:15000,sueldo:13275,obs:''},
+    {id:12,fecha:'2025-09-26',materia:'Matemáticas abi',apoderado:'Veronica Rosas',tutor:'Felipe Guijon',codigo:'VF2',colegio:'aleman',tipo:'abi',alumnos:1,modalidad:'presencial',duracion:1,precioApo:22000,sueldo:17700,obs:''},
+    {id:13,fecha:'2025-10-01',materia:'Matemáticas',apoderado:'Alejandra Muñoz',tutor:'Flo Vera',codigo:'AF1',colegio:'aleman',tipo:'aleman_sede',alumnos:1,modalidad:'presencial',duracion:1,precioApo:19700,sueldo:14700,obs:''},
+    {id:14,fecha:'2025-10-01',materia:'Matemáticas',apoderado:'Alejandra Muñoz',tutor:'Flo Vera',codigo:'AF1',colegio:'aleman',tipo:'aleman_sede',alumnos:1,modalidad:'presencial',duracion:1,precioApo:19700,sueldo:14700,obs:''},
+    {id:15,fecha:'2025-10-01',materia:'Matemáticas',apoderado:'Alejandra Muñoz',tutor:'Flo Vera',codigo:'AF1',colegio:'aleman',tipo:'aleman_sede',alumnos:1,modalidad:'presencial',duracion:1,precioApo:19700,sueldo:14700,obs:''},
+    {id:16,fecha:'2025-10-01',materia:'Matemáticas',apoderado:'Alejandra Muñoz',tutor:'Flo Vera',codigo:'AF1',colegio:'aleman',tipo:'aleman_sede',alumnos:1,modalidad:'presencial',duracion:1,precioApo:19700,sueldo:14700,obs:''},
+    {id:17,fecha:'2025-10-01',materia:'Matemáticas',apoderado:'Alejandra Muñoz',tutor:'Flo Vera',codigo:'AF1',colegio:'aleman',tipo:'aleman_sede',alumnos:1,modalidad:'presencial',duracion:1,precioApo:19700,sueldo:14700,obs:''},
+    {id:18,fecha:'2025-10-02',materia:'Historia',apoderado:'Ana Maria',tutor:'Amelia Soto',codigo:'AA1',colegio:'aleman',tipo:'aleman_sede',alumnos:1,modalidad:'online',duracion:1,precioApo:18600,sueldo:13500,obs:''},
+    {id:19,fecha:'2025-10-07',materia:'Matemáticas',apoderado:'Alejandra Muñoz',tutor:'Flo Vera',codigo:'AF1',colegio:'aleman',tipo:'aleman_sede',alumnos:1,modalidad:'presencial',duracion:1,precioApo:19700,sueldo:14700,obs:''},
+    {id:20,fecha:'2025-10-08',materia:'Matemáticas abi',apoderado:'Veronica Rosas',tutor:'Felipe Guijon',codigo:'VF2',colegio:'aleman',tipo:'abi',alumnos:1,modalidad:'presencial',duracion:1.5,precioApo:33000,sueldo:26550,obs:''},
+    {id:21,fecha:'2025-10-13',materia:'Matemáticas abi',apoderado:'Eileen Fuchs',tutor:'Florencia Espinoza',codigo:'EF1',colegio:'aleman',tipo:'abi',alumnos:1,modalidad:'presencial',duracion:1,precioApo:22000,sueldo:17700,obs:''},
+    {id:22,fecha:'2025-10-15',materia:'Matemáticas abi',apoderado:'Eileen Fuchs',tutor:'Florencia Espinoza',codigo:'EF1',colegio:'aleman',tipo:'abi',alumnos:1,modalidad:'presencial',duracion:1,precioApo:22000,sueldo:17700,obs:''},
+    {id:23,fecha:'2025-10-18',materia:'Matemáticas abi',apoderado:'Carola Boragk',tutor:'Michael Nickl',codigo:'CM1',colegio:'aleman',tipo:'abi',alumnos:1,modalidad:'presencial',duracion:1,precioApo:22000,sueldo:17700,obs:''},
+    {id:24,fecha:'2025-10-25',materia:'Matemáticas abi',apoderado:'Carola Boragk',tutor:'Michael Nickl',codigo:'CM1',colegio:'aleman',tipo:'abi',alumnos:1,modalidad:'presencial',duracion:1,precioApo:22000,sueldo:17700,obs:''},
+    {id:25,fecha:'2025-10-27',materia:'Matemáticas abi',apoderado:'Carola Boragk',tutor:'Florencia Espinoza',codigo:'CF1',colegio:'aleman',tipo:'abi',alumnos:1,modalidad:'presencial',duracion:1,precioApo:22000,sueldo:17700,obs:''},
+    {id:26,fecha:'2025-10-29',materia:'Matemáticas abi',apoderado:'Carola Boragk',tutor:'Michael Nickl',codigo:'CM1',colegio:'aleman',tipo:'abi',alumnos:1,modalidad:'presencial',duracion:1,precioApo:22000,sueldo:17700,obs:''},
+    {id:27,fecha:'2025-11-04',materia:'Matemáticas',apoderado:'Alfredo Urner',tutor:'Michael Nickl',codigo:'AM1',colegio:'aleman',tipo:'aleman_sede',alumnos:1,modalidad:'presencial',duracion:1,precioApo:19700,sueldo:14700,obs:''},
+    {id:28,fecha:'2025-11-06',materia:'Matemáticas abi',apoderado:'Carola Boragk',tutor:'Florencia Espinoza',codigo:'CF1',colegio:'aleman',tipo:'abi',alumnos:1,modalidad:'presencial',duracion:1,precioApo:22000,sueldo:17700,obs:''},
+    {id:29,fecha:'2025-11-08',materia:'Matemáticas abi',apoderado:'Carola Boragk',tutor:'Michael Nickl',codigo:'CM1',colegio:'aleman',tipo:'abi',alumnos:1,modalidad:'presencial',duracion:1,precioApo:22000,sueldo:17700,obs:''},
+    {id:30,fecha:'2025-11-12',materia:'Matemáticas abi',apoderado:'Veronica Rosas',tutor:'Felipe Guijon',codigo:'VF2',colegio:'aleman',tipo:'abi',alumnos:1,modalidad:'presencial',duracion:1.5,precioApo:33000,sueldo:26550,obs:''},
+    {id:31,fecha:'2025-11-21',materia:'Matemáticas abi',apoderado:'Veronica Rosas',tutor:'Felipe Guijon',codigo:'VF2',colegio:'aleman',tipo:'abi',alumnos:1,modalidad:'presencial',duracion:1.5,precioApo:33000,sueldo:26550,obs:''},
+    {id:32,fecha:'2025-11-21',materia:'Matemáticas abi',apoderado:'Carola Boragk',tutor:'Florencia Espinoza',codigo:'CF1',colegio:'aleman',tipo:'abi',alumnos:1,modalidad:'presencial',duracion:1,precioApo:22000,sueldo:17700,obs:''},
+    {id:33,fecha:'2025-11-23',materia:'Matemáticas abi',apoderado:'Carola Boragk',tutor:'Michael Nickl',codigo:'CM1',colegio:'aleman',tipo:'aleman_sede',alumnos:1,modalidad:'presencial',duracion:1,precioApo:19700,sueldo:14700,obs:''},
+    {id:34,fecha:'2025-11-24',materia:'Matemáticas abi',apoderado:'Carola Boragk',tutor:'Michael Nickl',codigo:'CM1',colegio:'aleman',tipo:'aleman_sede',alumnos:1,modalidad:'presencial',duracion:1,precioApo:19700,sueldo:14700,obs:''},
+    {id:35,fecha:'2025-11-30',materia:'Matemáticas abi',apoderado:'Veronica Rosas',tutor:'Felipe Guijon',codigo:'VF2',colegio:'aleman',tipo:'abi',alumnos:1,modalidad:'presencial',duracion:1.5,precioApo:33000,sueldo:26550,obs:''},
+    {id:36,fecha:'2025-11-30',materia:'Matemáticas',apoderado:'Claudia',tutor:'Florencia Espinoza',codigo:'CF2',colegio:'aleman',tipo:'aleman_sede',alumnos:1,modalidad:'presencial',duracion:1,precioApo:19700,sueldo:14700,obs:''},
+    {id:37,fecha:'2025-11-30',materia:'Matemáticas',apoderado:'Claudia',tutor:'Florencia Espinoza',codigo:'CF2',colegio:'aleman',tipo:'aleman_sede',alumnos:1,modalidad:'presencial',duracion:1,precioApo:19700,sueldo:14700,obs:''},
+    {id:38,fecha:'2025-12-01',materia:'Matemáticas',apoderado:'Claudia',tutor:'Arantza',codigo:'CA1',colegio:'aleman',tipo:'aleman_sede',alumnos:1,modalidad:'presencial',duracion:1.5,precioApo:29550,sueldo:22050,obs:''},
+    {id:39,fecha:'2025-12-01',materia:'Matemáticas',apoderado:'Claudia',tutor:'Arantza',codigo:'CA1',colegio:'aleman',tipo:'aleman_sede',alumnos:1,modalidad:'presencial',duracion:1.5,precioApo:29550,sueldo:22050,obs:''},
+    {id:40,fecha:'2026-03-14',materia:'Matemáticas abi',apoderado:'Carola Boragk',tutor:'Michael Nickl',codigo:'CM1',colegio:'aleman',tipo:'abi',alumnos:1,modalidad:'presencial',duracion:1,precioApo:22000,sueldo:17700,obs:''},
+    {id:41,fecha:'2026-03-17',materia:'Matemáticas',apoderado:'Pya Yaeger',tutor:'Pedro Castillo',codigo:'PP1',colegio:'aleman',tipo:'aleman_sede',alumnos:1,modalidad:'presencial',duracion:1,precioApo:19700,sueldo:14700,obs:''},
+    {id:42,fecha:'2026-03-17',materia:'Matemáticas',apoderado:'Alejandra',tutor:'Jose Tutora',codigo:'AJ1',colegio:'aleman',tipo:'abi',alumnos:1,modalidad:'presencial',duracion:1,precioApo:22000,sueldo:17700,obs:''},
+    {id:43,fecha:'2026-03-19',materia:'Inglés',apoderado:'Ana Maria',tutor:'Emma Branth',codigo:'AE1',colegio:'aleman',tipo:'abi',alumnos:1,modalidad:'presencial',duracion:1,precioApo:22000,sueldo:17700,obs:''},
+    {id:44,fecha:'2026-03-21',materia:'Matemáticas abi',apoderado:'Carola Boragk',tutor:'Michael Nickl',codigo:'CM1',colegio:'aleman',tipo:'abi',alumnos:1,modalidad:'presencial',duracion:1,precioApo:22000,sueldo:17700,obs:''},
+    {id:45,fecha:'2026-03-24',materia:'Matemáticas',apoderado:'Pya Yaeger',tutor:'Pedro Castillo',codigo:'PP1',colegio:'aleman',tipo:'aleman_sede',alumnos:1,modalidad:'presencial',duracion:1,precioApo:19700,sueldo:14700,obs:''},
+    {id:46,fecha:'2026-03-25',materia:'Matemáticas',apoderado:'Alfredo Urner',tutor:'Max Rodriguez',codigo:'AM2',colegio:'aleman',tipo:'aleman_sede',alumnos:1,modalidad:'presencial',duracion:1.5,precioApo:29550,sueldo:22050,obs:''},
+    {id:47,fecha:'2026-03-26',materia:'Matemáticas',apoderado:'Alejandra',tutor:'Jose Tutora',codigo:'AJ1',colegio:'aleman',tipo:'abi',alumnos:1,modalidad:'presencial',duracion:1,precioApo:22000,sueldo:17700,obs:''},
+    {id:48,fecha:'2026-03-27',materia:'Inglés',apoderado:'Ana Maria',tutor:'Emma Branth',codigo:'AE1',colegio:'aleman',tipo:'abi',alumnos:1,modalidad:'presencial',duracion:1,precioApo:22000,sueldo:17700,obs:''},
+    {id:49,fecha:'2026-03-27',materia:'Inglés',apoderado:'Ana Maria',tutor:'Emma Branth',codigo:'AE1',colegio:'aleman',tipo:'abi',alumnos:1,modalidad:'presencial',duracion:1,precioApo:22000,sueldo:17700,obs:''},
+    {id:50,fecha:'2026-03-28',materia:'Matemáticas',apoderado:'Pya Yaeger',tutor:'Pedro Castillo',codigo:'PP1',colegio:'aleman',tipo:'aleman_sede',alumnos:1,modalidad:'presencial',duracion:1,precioApo:19700,sueldo:14700,obs:''},
+    {id:51,fecha:'2026-03-29',materia:'Matemáticas',apoderado:'Alejandra Muñoz',tutor:'Ian Kamann',codigo:'AI1',colegio:'aleman',tipo:'aleman_sede',alumnos:1,modalidad:'presencial',duracion:1,precioApo:19700,sueldo:14700,obs:''},
+    {id:52,fecha:'2026-03-31',materia:'Inglés',apoderado:'Alfredo Urner',tutor:'Max Rodriguez',codigo:'AM2',colegio:'aleman',tipo:'aleman_sede',alumnos:1,modalidad:'presencial',duracion:0.5,precioApo:9850,sueldo:7350,obs:''},
+    {id:53,fecha:'2026-03-31',materia:'Inglés',apoderado:'Alfredo Urner',tutor:'Max Rodriguez',codigo:'AM2',colegio:'aleman',tipo:'aleman_sede',alumnos:1,modalidad:'presencial',duracion:0.5,precioApo:9850,sueldo:7350,obs:''},
+    {id:54,fecha:'2026-04-01',materia:'Matemáticas',apoderado:'Alfredo Urner',tutor:'Max Rodriguez',codigo:'AM2',colegio:'aleman',tipo:'abi',alumnos:1,modalidad:'presencial',duracion:1.5,precioApo:33000,sueldo:26550,obs:''},
+    {id:55,fecha:'2026-04-01',materia:'Matemáticas',apoderado:'Alejandra',tutor:'Jose Tutora',codigo:'AJ1',colegio:'aleman',tipo:'abi',alumnos:1,modalidad:'presencial',duracion:1,precioApo:22000,sueldo:17700,obs:''},
+    {id:56,fecha:'2026-04-01',materia:'Matemáticas abi',apoderado:'Carola Boragk',tutor:'Michael Nickl',codigo:'CM1',colegio:'aleman',tipo:'abi',alumnos:1,modalidad:'presencial',duracion:1,precioApo:22000,sueldo:17700,obs:''},
+    {id:57,fecha:'2026-04-06',materia:'Matemáticas abi',apoderado:'Pya Yaeger',tutor:'Pedro Castillo',codigo:'PP1',colegio:'aleman',tipo:'abi',alumnos:1,modalidad:'presencial',duracion:1,precioApo:22000,sueldo:17700,obs:''},
+    {id:58,fecha:'2026-04-08',materia:'Matemáticas',apoderado:'Alfredo Urner',tutor:'Max Rodriguez',codigo:'AM2',colegio:'aleman',tipo:'aleman_sede',alumnos:1,modalidad:'presencial',duracion:1.5,precioApo:29550,sueldo:22050,obs:''},
+    {id:59,fecha:'2026-04-08',materia:'Matemáticas',apoderado:'Alfredo Urner',tutor:'Max Rodriguez',codigo:'AM2',colegio:'aleman',tipo:'aleman_sede',alumnos:1,modalidad:'presencial',duracion:1.5,precioApo:29550,sueldo:22050,obs:''},
+    {id:60,fecha:'2026-04-08',materia:'Matemáticas',apoderado:'Alfredo Urner',tutor:'Max Rodriguez',codigo:'AM2',colegio:'aleman',tipo:'aleman_sede',alumnos:1,modalidad:'presencial',duracion:1.5,precioApo:29550,sueldo:22050,obs:''},
+    {id:61,fecha:'2026-04-11',materia:'Matemáticas',apoderado:'Alejandra Muñoz',tutor:'Ian Kamann',codigo:'AI1',colegio:'aleman',tipo:'aleman_sede',alumnos:1,modalidad:'presencial',duracion:1,precioApo:19700,sueldo:14700,obs:''},
+    {id:62,fecha:'2026-04-12',materia:'Matemáticas',apoderado:'Alejandra Muñoz',tutor:'Ian Kamann',codigo:'AI1',colegio:'aleman',tipo:'aleman_sede',alumnos:1,modalidad:'presencial',duracion:1,precioApo:19700,sueldo:14700,obs:''},
+    {id:63,fecha:'2026-04-15',materia:'Fisica',apoderado:'Alfredo Urner',tutor:'Max Rodriguez',codigo:'AM2',colegio:'aleman',tipo:'abi',alumnos:1,modalidad:'presencial',duracion:0.75,precioApo:15000,sueldo:13275,obs:''},
+    {id:64,fecha:'2026-04-15',materia:'Fisica',apoderado:'Alfredo Urner',tutor:'Max Rodriguez',codigo:'AM2',colegio:'aleman',tipo:'aleman_sede',alumnos:1,modalidad:'presencial',duracion:1,precioApo:19700,sueldo:14700,obs:''},
+    {id:65,fecha:'2026-04-15',materia:'Fisica',apoderado:'Alfredo Urner',tutor:'Max Rodriguez',codigo:'AM2',colegio:'aleman',tipo:'aleman_sede',alumnos:1,modalidad:'presencial',duracion:1.5,precioApo:29550,sueldo:22050,obs:''},
+    {id:66,fecha:'2026-04-15',materia:'Matemáticas',apoderado:'Alejandra',tutor:'Jose Tutora',codigo:'AJ1',colegio:'aleman',tipo:'abi',alumnos:1,modalidad:'presencial',duracion:1,precioApo:22000,sueldo:17700,obs:''},
+    {id:67,fecha:'2026-04-18',materia:'Matemáticas',apoderado:'Alejandra Muñoz',tutor:'Ian Kamann',codigo:'AI1',colegio:'aleman',tipo:'aleman_sede',alumnos:1,modalidad:'presencial',duracion:1,precioApo:19700,sueldo:14700,obs:''},
+    {id:68,fecha:'2026-04-18',materia:'Matemáticas abi',apoderado:'Pya Yaeger',tutor:'Pedro Castillo',codigo:'PP1',colegio:'aleman',tipo:'abi',alumnos:1,modalidad:'presencial',duracion:1,precioApo:22000,sueldo:17700,obs:''},
+    {id:69,fecha:'2026-04-19',materia:'Matemáticas',apoderado:'Alejandra',tutor:'Jose Tutora',codigo:'AJ1',colegio:'aleman',tipo:'abi',alumnos:1,modalidad:'presencial',duracion:1,precioApo:22000,sueldo:17700,obs:''},
+    {id:70,fecha:'2026-04-20',materia:'Matemáticas abi',apoderado:'Pya Yaeger',tutor:'Pedro Castillo',codigo:'PP1',colegio:'aleman',tipo:'abi',alumnos:1,modalidad:'presencial',duracion:1,precioApo:22000,sueldo:17700,obs:''},
+    {id:71,fecha:'2026-04-21',materia:'Biología',apoderado:'Alfredo Urner',tutor:'Max Rodriguez',codigo:'AM2',colegio:'aleman',tipo:'aleman_sede',alumnos:1,modalidad:'presencial',duracion:1,precioApo:19700,sueldo:14700,obs:''},
+    {id:72,fecha:'2026-04-23',materia:'Alemán',apoderado:'Alejandra',tutor:'Jose Tutora',codigo:'AJ1',colegio:'aleman',tipo:'abi',alumnos:1,modalidad:'presencial',duracion:1,precioApo:22000,sueldo:17700,obs:''},
+    {id:73,fecha:'2026-04-23',materia:'Matemáticas',apoderado:'Alejandra Muñoz',tutor:'Ian Kamann',codigo:'AI1',colegio:'aleman',tipo:'aleman_sede',alumnos:1,modalidad:'presencial',duracion:1,precioApo:19700,sueldo:14700,obs:''},
+    {id:74,fecha:'2026-04-25',materia:'Matemáticas',apoderado:'Alejandra Muñoz',tutor:'Ian Kamann',codigo:'AI1',colegio:'aleman',tipo:'aleman_sede',alumnos:1,modalidad:'presencial',duracion:1,precioApo:19700,sueldo:14700,obs:''},
+    {id:75,fecha:'2026-04-25',materia:'Matemáticas',apoderado:'Alejandra Muñoz',tutor:'Ian Kamann',codigo:'AI1',colegio:'aleman',tipo:'aleman_sede',alumnos:1,modalidad:'presencial',duracion:1,precioApo:19700,sueldo:14700,obs:''},
+    {id:76,fecha:'2026-04-26',materia:'Matemáticas',apoderado:'Alejandra Muñoz',tutor:'Ian Kamann',codigo:'AI1',colegio:'aleman',tipo:'aleman_sede',alumnos:1,modalidad:'presencial',duracion:1,precioApo:19700,sueldo:14700,obs:''},
+    {id:77,fecha:'2026-04-28',materia:'Matemáticas',apoderado:'Alfredo Urner',tutor:'Max Rodriguez',codigo:'AM2',colegio:'aleman',tipo:'aleman_sede',alumnos:1,modalidad:'presencial',duracion:1.5,precioApo:29550,sueldo:22050,obs:''},
+    {id:78,fecha:'2026-04-28',materia:'Matemáticas',apoderado:'Alfredo Urner',tutor:'Max Rodriguez',codigo:'AM2',colegio:'aleman',tipo:'aleman_sede',alumnos:1,modalidad:'presencial',duracion:1.5,precioApo:29550,sueldo:22050,obs:''},
+    {id:79,fecha:'2026-04-28',materia:'Matemáticas',apoderado:'Alejandra Muñoz',tutor:'Ian Kamann',codigo:'AI1',colegio:'aleman',tipo:'aleman_sede',alumnos:1,modalidad:'presencial',duracion:1,precioApo:19700,sueldo:14700,obs:''},
+    {id:80,fecha:'2026-04-29',materia:'Alemán',apoderado:'Alejandra',tutor:'Jose Tutora',codigo:'AJ1',colegio:'aleman',tipo:'abi',alumnos:1,modalidad:'presencial',duracion:1,precioApo:22000,sueldo:17700,obs:''},
+    {id:81,fecha:'2026-05-02',materia:'Matemáticas abi',apoderado:'Carola Boragk',tutor:'Michael Nickl',codigo:'CM1',colegio:'aleman',tipo:'abi',alumnos:1,modalidad:'presencial',duracion:1,precioApo:22000,sueldo:17700,obs:''},
+    {id:82,fecha:'2026-05-04',materia:'Matemáticas',apoderado:'Pya Yaeger',tutor:'Pedro Castillo',codigo:'PP1',colegio:'aleman',tipo:'abi',alumnos:1,modalidad:'presencial',duracion:1,precioApo:22000,sueldo:17700,obs:''},
+    {id:83,fecha:'2026-05-05',materia:'Matemáticas',apoderado:'Alejandra Muñoz',tutor:'Ian Kamann',codigo:'AI1',colegio:'aleman',tipo:'aleman_sede',alumnos:1,modalidad:'presencial',duracion:1,precioApo:19700,sueldo:14700,obs:''},
+    {id:84,fecha:'2026-05-06',materia:'Alemán',apoderado:'Alejandra',tutor:'Jose Tutora',codigo:'AJ1',colegio:'aleman',tipo:'abi',alumnos:1,modalidad:'presencial',duracion:1,precioApo:22000,sueldo:17700,obs:''},
+    {id:85,fecha:'2026-05-07',materia:'Matemáticas',apoderado:'Alejandra Muñoz',tutor:'Ian Kamann',codigo:'AI1',colegio:'aleman',tipo:'aleman_sede',alumnos:1,modalidad:'presencial',duracion:1,precioApo:19700,sueldo:14700,obs:''},
+    {id:86,fecha:'2026-05-11',materia:'Matemáticas',apoderado:'Pya Yaeger',tutor:'Pedro Castillo',codigo:'PP1',colegio:'aleman',tipo:'abi',alumnos:1,modalidad:'presencial',duracion:1,precioApo:22000,sueldo:17700,obs:''},
+    {id:87,fecha:'2026-05-14',materia:'Matemáticas',apoderado:'Alejandra Muñoz',tutor:'Ian Kamann',codigo:'AI1',colegio:'aleman',tipo:'aleman_sede',alumnos:1,modalidad:'presencial',duracion:1,precioApo:19700,sueldo:14700,obs:''},
+    {id:88,fecha:'2026-05-17',materia:'Matemáticas',apoderado:'Alejandra Muñoz',tutor:'Ian Kamann',codigo:'AI1',colegio:'aleman',tipo:'aleman_sede',alumnos:1,modalidad:'presencial',duracion:1,precioApo:19700,sueldo:14700,obs:''},
+    {id:89,fecha:'2026-05-18',materia:'Matemáticas',apoderado:'Pya Yaeger',tutor:'Pedro Castillo',codigo:'PP1',colegio:'aleman',tipo:'abi',alumnos:1,modalidad:'presencial',duracion:1,precioApo:22000,sueldo:17700,obs:''},
+    {id:90,fecha:'2026-05-18',materia:'Matemáticas',apoderado:'Mara',tutor:'Pedro Castillo',codigo:'MP1',colegio:'aleman',tipo:'aleman_sede',alumnos:1,modalidad:'presencial',duracion:1.5,precioApo:29550,sueldo:22050,obs:''},
+    {id:91,fecha:'2026-05-19',materia:'Matemáticas',apoderado:'Alejandra Muñoz',tutor:'Ian Kamann',codigo:'AI1',colegio:'aleman',tipo:'aleman_sede',alumnos:1,modalidad:'presencial',duracion:1,precioApo:19700,sueldo:14700,obs:''},
+    {id:92,fecha:'2026-05-19',materia:'Matemáticas',apoderado:'Alejandra Muñoz',tutor:'Ian Kamann',codigo:'AI1',colegio:'aleman',tipo:'aleman_sede',alumnos:1,modalidad:'presencial',duracion:1,precioApo:19700,sueldo:14700,obs:''},
+    {id:93,fecha:'2026-05-23',materia:'Matemáticas abi',apoderado:'Antonella',tutor:'Pedro Castillo',codigo:'AP1',colegio:'aleman',tipo:'abi',alumnos:1,modalidad:'presencial',duracion:1,precioApo:22000,sueldo:17700,obs:''},
+    {id:94,fecha:'2026-05-25',materia:'Matemáticas',apoderado:'Alejandra Muñoz',tutor:'Ian Kamann',codigo:'AI1',colegio:'aleman',tipo:'aleman_sede',alumnos:1,modalidad:'presencial',duracion:1,precioApo:19700,sueldo:14700,obs:''},
+    {id:95,fecha:'2026-05-25',materia:'Matemáticas',apoderado:'Pia Maritano',tutor:'Martina Vielma',codigo:'PM1',colegio:'aleman',tipo:'abi',alumnos:1,modalidad:'presencial',duracion:1,precioApo:22000,sueldo:17700,obs:''},
+    {id:96,fecha:'2026-05-25',materia:'Matemáticas',apoderado:'Pya Yaeger',tutor:'Pedro Castillo',codigo:'PP1',colegio:'aleman',tipo:'abi',alumnos:1,modalidad:'presencial',duracion:1,precioApo:22000,sueldo:17700,obs:''},
+    {id:97,fecha:'2026-05-25',materia:'Matemáticas',apoderado:'Mara',tutor:'Pedro Castillo',codigo:'MP1',colegio:'aleman',tipo:'aleman_sede',alumnos:1,modalidad:'presencial',duracion:1.5,precioApo:29550,sueldo:22050,obs:''},
+    {id:98,fecha:'2026-05-26',materia:'Matemáticas abi',apoderado:'Antonella',tutor:'Pedro Castillo',codigo:'AP1',colegio:'aleman',tipo:'abi',alumnos:1,modalidad:'presencial',duracion:1,precioApo:22000,sueldo:17700,obs:''},
+    {id:99,fecha:'2026-05-27',materia:'Matemáticas',apoderado:'Felipe Madrid',tutor:'Martina Vielma',codigo:'FM1',colegio:'aleman',tipo:'aleman_sede',alumnos:1,modalidad:'presencial',duracion:1,precioApo:19700,sueldo:14700,obs:''},
+    {id:100,fecha:'2026-05-28',materia:'Matemáticas',apoderado:'Alfredo Urner',tutor:'Max Rodriguez',codigo:'AM2',colegio:'aleman',tipo:'aleman_sede',alumnos:1,modalidad:'presencial',duracion:1.5,precioApo:29550,sueldo:22050,obs:''},
+    {id:101,fecha:'2026-05-28',materia:'Matemáticas',apoderado:'Alfredo Urner',tutor:'Max Rodriguez',codigo:'AM2',colegio:'aleman',tipo:'aleman_sede',alumnos:1,modalidad:'presencial',duracion:1.5,precioApo:29550,sueldo:22050,obs:''},
+    {id:102,fecha:'2026-05-29',materia:'Matemáticas',apoderado:'Mara',tutor:'Pedro Castillo',codigo:'MP1',colegio:'aleman',tipo:'aleman_sede',alumnos:1,modalidad:'presencial',duracion:1,precioApo:19700,sueldo:14700,obs:''}
+  ],nextId:103,pares:[
+  {cod:'CM1',apo:'Carola Boragk',tutor:'Michael Nickl',colegio:'aleman'},
+  {cod:'CM2',apo:'Constanza Coron',tutor:'Max Rodriguez',colegio:'aleman'},
+  {cod:'CM3',apo:'Carolina Schroter',tutor:'Max Rodriguez',colegio:'aleman'},
+  {cod:'NM2',apo:'Nessa Kaulen',tutor:'Max Rodriguez',colegio:'aleman'},
+  {cod:'KP1',apo:'Karin Knopchen',tutor:'Pedro Castillo',colegio:'aleman'},
+  {cod:'PN1',apo:'Pablo Ripetti',tutor:'Nicolas Cardenas',colegio:'aleman'},
+  {cod:'GP1',apo:'Gunter Zach',tutor:'Pedro Castillo',colegio:'aleman'},
+  {cod:'NM1',apo:'Nessa Kaulen',tutor:'Michael Nickl',colegio:'aleman'},
+  {cod:'SA1',apo:'Sonia Vogt',tutor:'Amelia Soto',colegio:'aleman'},
+  {cod:'AA1',apo:'Ana Maria',tutor:'Amelia Soto',colegio:'aleman'},
+  {cod:'VF1',apo:'Veronika',tutor:'Flo Vera',colegio:'aleman'},
+  {cod:'ES1',apo:'Eileen Fuchs',tutor:'Stephi S',colegio:'aleman'},
+  {cod:'VF2',apo:'Veronica Rosas',tutor:'Felipe Guijon',colegio:'aleman'},
+  {cod:'CA1',apo:'Claudia',tutor:'Arantza',colegio:'aleman'},
+  {cod:'AF1',apo:'Alejandra Muñoz',tutor:'Flo Vera',colegio:'aleman'},
+  {cod:'EC1',apo:'Elizabeth Sharpe',tutor:'Cristobal Hoehmann',colegio:'aleman'},
+  {cod:'JI1',apo:'Javiera',tutor:'Ignacio Kreis',colegio:'aleman'},
+  {cod:'CM4',apo:'Carola Boragk',tutor:'Max Rodriguez',colegio:'aleman'},
+  {cod:'EM1',apo:'Eileen Fuchs',tutor:'Michael Nickl',colegio:'aleman'},
+  {cod:'CF1',apo:'Carola Boragk',tutor:'Florencia Espinoza',colegio:'aleman'},
+  {cod:'EF1',apo:'Eileen Fuchs',tutor:'Florencia Espinoza',colegio:'aleman'},
+  {cod:'AM1',apo:'Alfredo Urner',tutor:'Michael Nickl',colegio:'aleman'},
+  {cod:'CF2',apo:'Claudia',tutor:'Florencia Espinoza',colegio:'aleman'},
+  {cod:'AJ1',apo:'Alejandra',tutor:'Jose Tutora',colegio:'aleman'},
+  {cod:'AE1',apo:'Ana Maria',tutor:'Emma Branth',colegio:'aleman'},
+  {cod:'AM2',apo:'Alfredo Urner',tutor:'Max Rodriguez',colegio:'aleman'},
+  {cod:'PP1',apo:'Pya Yaeger',tutor:'Pedro Castillo',colegio:'aleman'},
+  {cod:'AI1',apo:'Alejandra Muñoz',tutor:'Ian Kamann',colegio:'aleman'},
+  {cod:'PM1',apo:'Pia Maritano',tutor:'Martina Vielma',colegio:'aleman'},
+  {cod:'MP1',apo:'Mara',tutor:'Pedro Castillo',colegio:'aleman'},
+  {cod:'AP1',apo:'Antonella',tutor:'Pedro Castillo',colegio:'aleman'},
+  {cod:'FM1',apo:'Felipe Madrid',tutor:'Martina Vielma',colegio:'aleman'}
+]};
+SEED_DATA.colegios = [
+  {id:'aleman', nombre:'Colegio Alemán', coordinador:''},
+  {id:'alianza', nombre:'Alianza Francesa', coordinador:''},
+  {id:'nolasco', nombre:'San Pedro Nolasco', coordinador:''},
+  {id:'universitaria', nombre:'Universitaria', coordinador:''}
+];
+
+const T1 = {
+  aleman_sede:{
+    presencial:{1:{p:19700,s:14700},2:{p:32900,s:25100},3:{p:42100,s:33100},4:{p:56900,s:46000}},
+    online:    {1:{p:18600,s:13500},2:{p:31100,s:23200},3:{p:39700,s:30500},4:{p:53700,s:42400}}
+  },
+  aleman_idioma:{
+    presencial:{1:{p:19700,s:14700},2:{p:32900,s:25100},3:{p:42100,s:33100},4:{p:56900,s:46000}},
+    online:    {1:{p:18600,s:13500},2:{p:31100,s:23200},3:{p:39700,s:30500},4:{p:53700,s:42400}}
+  },
+  universitaria:{
+    presencial:{1:{p:23100,s:17700}},
+    online:    {1:{p:21800,s:16400}}
+  },
+  abi:{
+    presencial:{1:{p:22000,s:17700},2:{p:36800,s:30000}},
+    online:    {1:{p:21000,s:16500},2:{p:35000,s:28000}}
+  }
+};
+
+const MAX_AL = {aleman_sede:4,aleman_idioma:4,universitaria:1,abi:2};
+
+function calcPrecio(tipo,mod,al,factor){
+  const t=T1[tipo];if(!t)return{p:0,s:0,m:0};
+  const m=t[mod];if(!m)return{p:0,s:0,m:0};
+  const n=Math.min(parseInt(al)||1,MAX_AL[tipo]||1);
+  const b=m[n]||m[1];
+  const p=Math.round(b.p*factor);
+  const s=Math.round(b.s*factor);
+  return{p,s,m:p-s};
+}
+
+let DB=null;
+let role=null,user=null,curView=null,currentColegio=null;
+let selMonth=new Date().getMonth(),selYear=new Date().getFullYear();
+function getSelYears(){
+  const years=new Set([...(DB&&DB.clases?DB.clases:[]).map(c=>new Date(c.fecha).getFullYear())]);
+  const cur=new Date().getFullYear();
+  years.add(cur);years.add(cur+1);years.add(cur+2);
+  return [...years].sort();
+}
+
+function saveDB(){
+  const clean=JSON.parse(JSON.stringify(DB));
+  // Write each section separately so realtime listeners don't race with saves
+  const updates={};
+  updates['/clases']=clean.clases;
+  updates['/nextId']=clean.nextId;
+  updates['/pares']=clean.pares;
+  updates['/colegios']=clean.colegios||null;
+  updates['/pagosTutores']=clean.pagosTutores||null;
+  fbDB.ref('/').update(updates).catch(e=>alert('Error Firebase: '+e.message));
+}
+function resetDB(){if(confirm('¿Resetear datos?')){fbDB.ref('/').remove().then(()=>location.reload());}}
+
+function loadApp(){
+  fbDB.ref('/').once('value').then(snap=>{
+    const data=snap.val();
+    if(data&&data.clases){
+      DB=data;
+      if(!Array.isArray(DB.clases))DB.clases=Object.values(DB.clases);
+      if(!Array.isArray(DB.pares))DB.pares=Object.values(DB.pares||{});
+      if(DB.colegios&&!Array.isArray(DB.colegios))DB.colegios=Object.values(DB.colegios);
+      if(!DB.clases)DB.clases=[];
+      if(!DB.pares)DB.pares=[];
+      if(!DB.pagosTutores)DB.pagosTutores={};
+      if(!DB.nextId)DB.nextId=DB.clases.length+1;
+    }else{
+      DB=JSON.parse(JSON.stringify(SEED_DATA));
+      DB.colegios=JSON.parse(JSON.stringify(SEED_DATA.colegios));
+      fbDB.ref('/').set(DB);
+    }
+    document.getElementById('loadingScreen').style.display='none';
+    document.getElementById('loginScreen').style.display='flex';
+    // Populate login stats
+    const sc=document.getElementById('statClases');if(sc)sc.textContent=DB.clases?DB.clases.length:'—';
+    const st=document.getElementById('statTutores');if(st)st.textContent=DB.pares?[...new Set(DB.pares.map(p=>p.tutor))].length:'—';
+    const sp=document.getElementById('statPares');if(sp)sp.textContent=DB.pares?DB.pares.length:'—';
+  }).catch(err=>{
+    document.getElementById('loadingScreen').innerHTML=
+      '<div style="text-align:center;padding:40px"><div style="font-size:15px;font-weight:600;color:#dc2626">Error: '+err.message+'</div><button onclick="location.reload()" style="margin-top:16px;padding:8px 16px;background:#2563eb;color:#fff;border:none;border-radius:7px;cursor:pointer">Reintentar</button></div>';
+  });
+}
+
+loadApp();
+
+// ── Helpers ──
+function fmt(n){return'$'+Math.round(n).toLocaleString('es-CL')}
+function fmtD(s){if(!s)return'';const d=new Date(s+'T12:00');return d.toLocaleDateString('es-CL',{day:'2-digit',month:'short',year:'numeric'})}
+function ini(n){return(n||'?').split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase()}
+const AVC=['av-blue','av-purple','av-green','av-orange'];
+function avc(n){return AVC[(n||'').charCodeAt(0)%4]}
+function durLabel(f){return{0.5:'30 min',0.75:'45 min',1:'1 hora',1.5:'1:30 hr',2:'2 horas',2.5:'2:30 hr'}[f]||f+'h'}
+function tipoLabel(t){return{aleman_sede:'Clásico',aleman_idioma:'Clásico',abi:'ABI',universitaria:'Universitaria'}[t]||t}
+function tiposParaColegio(cid){
+  const base=[{v:'aleman_sede',l:'Clásico'}];
+  if(cid==='aleman'||!cid) base.push({v:'abi',l:'ABI'});
+  if(cid==='universitaria') base.push({v:'universitaria',l:'Universitaria'});
+  return base;
+}
+function updateTipoSelect(cid){
+  const sel=document.getElementById('fTipo');if(!sel)return;
+  const tipos=tiposParaColegio(cid);
+  sel.innerHTML=tipos.map(t=>`<option value="${t.v}">${t.l}</option>`).join('');
+  recalc();
+}
+function tipoBadge(t){return t==='abi'?'badge-purple':t==='universitaria'?'badge-blue':'badge-gray'}
+function getColegios(){return DB.colegios||SEED_DATA.colegios}
+function colNombre(id){return(getColegios().find(c=>c.id===id)||{nombre:id}).nombre}
+function getPARES(){return DB.pares||[]}
+function paresDeColegio(cid){return getPARES().filter(p=>p.colegio===cid||(cid==='aleman'&&!p.colegio))}
+function clasesDeColegio(cid){return DB.clases.filter(c=>c.colegio===cid||(cid==='aleman'&&!c.colegio))}
+function monthClases(){return DB.clases.filter(c=>{const d=new Date(c.fecha);return d.getMonth()===selMonth&&d.getFullYear()===selYear})}
+function monthClasesColegio(cid){return clasesDeColegio(cid).filter(c=>{const d=new Date(c.fecha);return d.getMonth()===selMonth&&d.getFullYear()===selYear})}
+
+// ── Login ──
+function selectRole(r){
+  document.querySelectorAll('.role-btn').forEach(b=>b.classList.remove('selected'));
+  const btn=document.getElementById('rb'+r);if(btn)btn.classList.add('selected');
+  ['adminForm','coordForm','userForm'].forEach(id=>document.getElementById(id).style.display='none');
+  document.getElementById('pwErr').style.display='none';
+  role=r;
+  if(r==='superadmin'){
+    document.getElementById('adminForm').style.display='block';
+    document.getElementById('adminPw').value='';
+    setTimeout(()=>document.getElementById('adminPw').focus(),50);
+  } else if(r==='coordinador'){
+    const cs=document.getElementById('coordColegio');
+    cs.innerHTML='<option value="">Seleccionar colegio...</option>';
+    getColegios().forEach(c=>{const o=document.createElement('option');o.value=c.id;o.textContent=c.nombre;cs.appendChild(o)});
+    document.getElementById('coordForm').style.display='block';
+  } else {
+    const cs=document.getElementById('userColegio');
+    cs.innerHTML='<option value="">Seleccionar colegio...</option>';
+    getColegios().forEach(c=>{const o=document.createElement('option');o.value=c.id;o.textContent=c.nombre;cs.appendChild(o)});
+    document.getElementById('loginUserInput').value='';
+    document.getElementById('loginUser').value='';
+    document.getElementById('loginUserDropdown').style.display='none';
+    document.getElementById('userPw').value='';
+    document.getElementById('userErr').style.display='none';
+    document.getElementById('userForm').style.display='block';
+  }
+}
+
+function onUserColegioChange(){
+  const cid=document.getElementById('userColegio').value;
+  currentColegio=cid;
+  document.getElementById('loginUserInput').value='';
+  document.getElementById('loginUser').value='';
+  document.getElementById('loginUserDropdown').style.display='none';
+  if(!cid)return;
+}
+
+function _getLoginNames(){
+  const cid=document.getElementById('userColegio').value;
+  if(!cid)return[];
+  const pares=paresDeColegio(cid);
+  return role==='tutor'
+    ?[...new Set(pares.map(p=>p.tutor))].sort()
+    :[...new Set(pares.map(p=>p.apo))].sort();
+}
+
+function filterLoginUsers(q){
+  const dd=document.getElementById('loginUserDropdown');
+  document.getElementById('loginUser').value='';
+  const names=_getLoginNames();
+  const filtered=q.trim()===''?names:names.filter(n=>n.toLowerCase().includes(q.toLowerCase()));
+  if(!filtered.length){dd.style.display='none';return;}
+  dd.innerHTML=filtered.map(n=>`<div onclick="selectLoginUser('${n.replace(/'/g,"\\'")}')"
+    style="padding:10px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid #f5f5f5"
+    onmouseover="this.style.background='#eff6ff'" onmouseout="this.style.background='#fff'">${n}</div>`).join('');
+  dd.style.display='block';
+}
+
+function selectLoginUser(name){
+  document.getElementById('loginUserInput').value=name;
+  document.getElementById('loginUser').value=name;
+  document.getElementById('loginUserDropdown').style.display='none';
+  document.getElementById('userPw').focus();
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click',function(e){
+  const dd=document.getElementById('loginUserDropdown');
+  if(dd&&!dd.contains(e.target)&&e.target.id!=='loginUserInput')dd.style.display='none';
+});
+
+function enterAdmin(){
+  if(document.getElementById('adminPw').value!==ADMIN_PW){
+    document.getElementById('pwErr').style.display='block';
+    document.getElementById('adminPw').value='';return;
+  }
+  user='Alan';currentColegio='all';launch();
+}
+
+function enterCoord(){
+  const cid=document.getElementById('coordColegio').value;
+  const pw=document.getElementById('coordPw').value;
+  if(!cid){alert('Selecciona un colegio');return}
+  const col=getColegios().find(c=>c.id===cid);
+  const expected=(col&&col.password)||COORD_PW;
+  if(pw!==expected){document.getElementById('coordErr').style.display='block';document.getElementById('coordPw').value='';return}
+  document.getElementById('coordErr').style.display='none';
+  user='Coordinador '+colNombre(cid);currentColegio=cid;launch();
+}
+
+function enterUser(){
+  const u=document.getElementById('loginUser').value.trim();
+  if(!u){alert('Selecciona tu nombre de la lista');return}
+  const cid=document.getElementById('userColegio').value;
+  if(!cid){alert('Selecciona un colegio');return}
+  const pw=document.getElementById('userPw').value;
+  const expected=role==='tutor'?TUTOR_PW:APO_PW;
+  if(pw!==expected){
+    document.getElementById('userErr').style.display='block';
+    document.getElementById('userPw').value='';return;
+  }
+  document.getElementById('userErr').style.display='none';
+  user=u;currentColegio=cid;launch();
+}
+
+function launch(){
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('app').style.display='block';
+  setupSidebar();
+  // Realtime sync — only pagosTutores needs live updates (multi-user marking payments)
+  fbDB.ref('/pagosTutores').on('value',snap=>{
+    if(!DB)return;
+    DB.pagosTutores=snap.val()||{};
+  });
+}
+
+function logout(){
+  role=null;user=null;currentColegio=null;
+  document.getElementById('loginScreen').style.display='flex';
+  document.getElementById('app').style.display='none';
+  ['adminForm','coordForm','userForm'].forEach(id=>document.getElementById(id).style.display='none');
+  document.querySelectorAll('.role-btn').forEach(b=>b.classList.remove('selected'));
+}
+
+// ── Sidebar ──
+function setupSidebar(){
+  document.getElementById('sidebarUser').textContent=user;
+  document.getElementById('sidebarRole').textContent=
+    role==='superadmin'?'Administradoristrador':role==='coordinador'?'Coordinador':role==='tutor'?'Tutor':'Apoderado';
+  document.getElementById('sidebarColegio').textContent=
+    currentColegio&&currentColegio!=='all'?colNombre(currentColegio):'';
+
+  const defs={
+    superadmin:[
+      {lbl:'Global',items:[{id:'dash-global',ic:'📊',lbl:'Dashboard global'},{id:'pagos-global',ic:'💰',lbl:'Pagos a coordinadores'}]},
+      {lbl:'Colegios',items:[{id:'colegios',ic:'🏫',lbl:'Gestión colegios'},{id:'clases-global',ic:'📋',lbl:'Todas las clases'}]},
+      {lbl:'Configuración',items:[{id:'pares-admin',ic:'🔗',lbl:'Parejas código'},{id:'tarifas',ic:'💲',lbl:'Tabla de tarifas'}]}
+    ],
+    coordinador:[
+      {lbl:'Mi colegio',items:[{id:'dash-coord',ic:'📊',lbl:'Dashboard'},{id:'pagos-coord',ic:'💰',lbl:'Cobros y pagos'},{id:'clases-coord',ic:'📋',lbl:'Clases'}]},
+      {lbl:'Gestión',items:[{id:'pares-coord',ic:'🔗',lbl:'Parejas'},{id:'tutores-coord',ic:'📚',lbl:'Tutores'},{id:'apoderados-coord',ic:'👨‍👩‍👧',lbl:'Apoderados'}]}
+    ],
+    tutor:[
+      {lbl:'Mi panel',items:[{id:'mis-clases',ic:'📋',lbl:'Mis clases'},{id:'nueva-clase',ic:'➕',lbl:'Registrar clase'},{id:'mis-pagos',ic:'💰',lbl:'Mis pagos'}]}
+    ],
+    apoderado:[
+      {lbl:'Mi panel',items:[{id:'mis-clases-apo',ic:'📋',lbl:'Mis clases'},{id:'mi-resumen',ic:'📊',lbl:'Resumen mensual'},{id:'mi-perfil',ic:'👤',lbl:'Mi perfil'}]}
+    ]
+  };
+
+  const nav=document.getElementById('sidebarNav');nav.innerHTML='';
+  (defs[role]||[]).forEach(sec=>{
+    const s=document.createElement('div');s.className='nav-section';s.textContent=sec.lbl;nav.appendChild(s);
+    sec.items.forEach(it=>{
+      const d=document.createElement('div');d.className='nav-item';d.dataset.view=it.id;
+      d.innerHTML=`<span>${it.ic}</span><span>${it.lbl}</span>`;
+      d.onclick=()=>showView(it.id);nav.appendChild(d);
+    });
+  });
+  showView((defs[role]||[{items:[{id:'dash-global'}]}])[0].items[0].id);
+}
+
+// ── Router ──
+const TITLES={
+  'dash-global':'Dashboard global','pagos-global':'Pagos a coordinadores','colegios':'Gestión de colegios',
+  'clases-global':'Todas las clases','pares-admin':'Parejas código','tarifas':'Tabla de tarifas',
+  'dash-coord':'Dashboard','pagos-coord':'Cobros y pagos del mes','clases-coord':'Clases',
+  'pares-coord':'Parejas','tutores-coord':'Tutores','apoderados-coord':'Apoderados',
+  'mis-clases':'Mis clases','nueva-clase':'Registrar clase','mis-pagos':'Mis pagos',
+  'mis-clases-apo':'Mis clases','mi-resumen':'Resumen mensual','mi-perfil':'Mi perfil'
+};
+
+function showView(id){
+  curView=id;
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.view===id));
+  document.getElementById('pageTitle').textContent=TITLES[id]||id;
+  const mSel=`<div style="display:flex;gap:6px">
+    <select onchange="selYear=parseInt(this.value);showView(curView)" style="padding:7px 12px;border:1px solid #e5e5e5;border-radius:7px;font-size:13px;background:#fff">
+      ${getSelYears().map(y=>`<option value="${y}"${y===selYear?' selected':''}>${y}</option>`).join('')}
+    </select>
+    <select onchange="selMonth=parseInt(this.value);showView(curView)" style="padding:7px 12px;border:1px solid #e5e5e5;border-radius:7px;font-size:13px;background:#fff">
+      ${MESES.map((m,i)=>`<option value="${i}"${i===selMonth?' selected':''}>${m}</option>`).join('')}
+    </select></div>`;
+  const ACTS={
+    'dash-global':()=>mSel,'pagos-global':()=>mSel,
+    'dash-coord':()=>mSel,'pagos-coord':()=>mSel,
+    'clases-global':()=>`<button class="btn btn-primary" onclick="openModal()">+ Registrar clase</button>`,
+    'clases-coord':()=>`<button class="btn btn-primary" onclick="openModal()">+ Registrar clase</button>`,
+  };
+  document.getElementById('topbarActions').innerHTML=ACTS[id]?ACTS[id]():'';
+  const RENDERS={
+    'dash-global':rDashGlobal,'pagos-global':rPagosGlobal,'colegios':rColegios,
+    'clases-global':rClasesGlobal,'pares-admin':rParesAdmin,'tarifas':rTarifas,
+    'dash-coord':rDashCoord,'pagos-coord':rPagosCoord,'clases-coord':rClasesCoord,
+    'pares-coord':rParesCoord,'tutores-coord':rTutoresCoord,'apoderados-coord':rApoderadosCoord,
+    'mis-clases':rMisClases,'nueva-clase':rNuevaClase,'mis-pagos':rMisPagos,
+    'mis-clases-apo':rMisClasesApo,'mi-resumen':rMiResumen,'mi-perfil':rMiPerfil
+  };
+  document.getElementById('viewContainer').innerHTML=RENDERS[id]?RENDERS[id]():'';
+  if(id==='clases-global')setTimeout(filtrar,30);
+}
+
+// ════════════════════════════════
+// SUPER ADMIN VIEWS
+// ════════════════════════════════
+
+function rDashGlobal(){
+  const cl=monthClases();
+  const tA=cl.reduce((s,c)=>s+c.precioApo,0);
+  const tT=cl.reduce((s,c)=>s+c.sueldo,0);
+  const tCom=tA-tT;
+  const cols=getColegios();
+  return`<div class="content">
+  <div class="stats-grid">
+    <div class="stat-card"><div class="stat-label">Clases ${MESES[selMonth]}</div><div class="stat-value">${cl.length}</div></div>
+    <div class="stat-card"><div class="stat-label">Ingresos brutos (todos)</div><div class="stat-value">${fmt(tA)}</div></div>
+    <div class="stat-card"><div class="stat-label">Pagado a tutores</div><div class="stat-value">${fmt(tT)}</div></div>
+    <div class="stat-card"><div class="stat-label">Margen total</div><div class="stat-value" style="color:#2563eb">${fmt(tCom)}</div><div class="stat-sub">${tA>0?Math.round(tCom/tA*100)+'%':'-'}</div></div>
+  </div>
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-header"><h3>Resumen por colegio — ${MESES[selMonth]} ${selYear}</h3></div>
+    <table><thead><tr><th>Colegio</th><th>Clases</th><th>Apo cobran</th><th>Tutores pagan</th><th>Margen colegio</th><th>Tu comisión estimada</th></tr></thead>
+    <tbody>${cols.map(col=>{
+      const cc=monthClasesColegio(col.id);
+      if(!cc.length)return`<tr><td><strong>${col.nombre}</strong></td><td colspan="5" style="color:#aaa">Sin clases este mes</td></tr>`;
+      const a=cc.reduce((s,c)=>s+c.precioApo,0);
+      const t=cc.reduce((s,c)=>s+c.sueldo,0);
+      const m=a-t;
+      const pct=Math.round(m/a*100);
+      return`<tr>
+        <td><strong>${col.nombre}</strong></td>
+        <td>${cc.length}</td>
+        <td class="amount">${fmt(a)}</td>
+        <td class="amount" style="color:#dc2626">${fmt(t)}</td>
+        <td class="amount" style="color:#2563eb;font-weight:500">${fmt(m)} (${pct}%)</td>
+        <td class="amount" style="color:#16a34a;font-weight:500">${fmt(Math.round(m*0.6))}</td>
+      </tr>`;
+    }).join('')}</tbody>
+    <tfoot><tr style="background:#f9f9f9;font-weight:600">
+      <td>Total</td><td>${cl.length}</td><td class="amount">${fmt(tA)}</td>
+      <td class="amount" style="color:#dc2626">${fmt(tT)}</td>
+      <td class="amount" style="color:#2563eb">${fmt(tCom)}</td>
+      <td class="amount" style="color:#16a34a">${fmt(Math.round(tCom*0.6))}</td>
+    </tr></tfoot>
+    </table>
+    <div style="padding:10px 18px;font-size:11px;color:#888">* Comisión estimada = 60% del margen bruto del colegio (ajusta este % según tu acuerdo con cada coordinador)</div>
+  </div>
+  <div class="card">
+    <div class="card-header"><h3>Últimas clases (todos los colegios)</h3></div>
+    <table><thead><tr><th>Fecha</th><th>Colegio</th><th>Materia</th><th>Apoderado</th><th>Tutor</th><th>Apo $</th><th>Tutor $</th><th>Margen $</th></tr></thead>
+    <tbody>${[...DB.clases].sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)).slice(0,8).map(c=>{
+      const col=getColegios().find(x=>x.id===c.colegio)||(c.colegio?null:{nombre:'Aleman'});
+      return`<tr>
+        <td>${fmtD(c.fecha)}</td>
+        <td><span class="badge badge-gray" style="font-size:10px">${col?col.nombre:c.colegio}</span></td>
+        <td>${c.materia}</td><td>${c.apoderado}</td><td>${c.tutor}</td>
+        <td class="amount">${fmt(c.precioApo)}</td>
+        <td class="amount" style="color:#dc2626">${fmt(c.sueldo)}</td>
+        <td class="amount" style="color:#2563eb">${fmt(c.precioApo-c.sueldo)}</td>
+      </tr>`;
+    }).join('')}</tbody></table>
+  </div></div>`;
+}
+
+function rPagosGlobal(){
+  const cols=getColegios();
+  return`<div class="content">
+  <div class="alert-blue" style="margin-bottom:20px">Resumen de lo que debes pagarle a cada coordinador en <strong>${MESES[selMonth]} ${selYear}</strong></div>
+  ${cols.map(col=>{
+    const cl=monthClasesColegio(col.id);
+    if(!cl.length)return`<div class="card" style="margin-bottom:12px;opacity:.6"><div style="padding:16px"><strong>${col.nombre}</strong><span style="margin-left:12px;font-size:12px;color:#aaa">Sin clases este mes</span></div></div>`;
+    const tA=cl.reduce((s,c)=>s+c.precioApo,0);
+    const tT=cl.reduce((s,c)=>s+c.sueldo,0);
+    const margen=tA-tT;
+    const tuComision=Math.round(margen*0.4);
+    const coordComision=margen-tuComision;
+    const bT={};cl.forEach(c=>{if(!bT[c.tutor])bT[c.tutor]=0;bT[c.tutor]+=c.sueldo});
+    return`<div class="card" style="margin-bottom:16px">
+      <div class="card-header"><h3>${col.nombre}</h3><span style="font-size:13px;color:#888">${cl.length} clases</span></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;padding:14px 18px;border-bottom:1px solid #f0f0f0">
+        <div class="stat-card"><div class="stat-label">Apos pagan</div><div class="stat-value">${fmt(tA)}</div></div>
+        <div class="stat-card"><div class="stat-label">Tutores reciben</div><div class="stat-value" style="color:#dc2626">${fmt(tT)}</div></div>
+        <div class="stat-card"><div class="stat-label">Margen bruto</div><div class="stat-value" style="color:#2563eb">${fmt(margen)}</div></div>
+        <div class="stat-card" style="background:#f0fdf4"><div class="stat-label">Debes pagar al coord.</div><div class="stat-value" style="color:#16a34a">${fmt(coordComision)}</div><div class="stat-sub">Tu parte: ${fmt(tuComision)}</div></div>
+      </div>
+      <div style="padding:14px 18px">
+        <div style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Detalle tutores</div>
+        <table><thead><tr><th>Tutor</th><th class="num">A recibir</th></tr></thead>
+        <tbody>${Object.entries(bT).sort((a,b)=>b[1]-a[1]).map(([t,m])=>`<tr><td><span class="avatar ${avc(t)}">${ini(t)}</span>${t}</td><td class="amount" style="color:#dc2626">${fmt(m)}</td></tr>`).join('')}</tbody>
+        </table>
+      </div>
+    </div>`;
+  }).join('')}
+  </div>`;
+}
+
+// ── Super admin: register coordinators per colegio ──
+function reimportarSeed(){
+  if(!confirm('¿Reimportar clases y parejas desde el seed?\n\nEsto REEMPLAZARÁ todas las clases y parejas actuales en Firebase con los datos del Excel cargado en el código.\n\nLas contraseñas de coordinadores y colegios se mantendrán.'))return;
+  // Preserve passwords from current colegios
+  const pwMap={};
+  getColegios().forEach(c=>{if(c.password)pwMap[c.id]=c.password});
+  // Reset clases and pares from seed, keep colegios with passwords
+  DB.clases=JSON.parse(JSON.stringify(SEED_DATA.clases));
+  DB.pares=JSON.parse(JSON.stringify(SEED_DATA.pares));
+  DB.nextId=SEED_DATA.nextId;
+  // Restore colegios preserving passwords
+  const seedCols=JSON.parse(JSON.stringify(SEED_DATA.colegios));
+  seedCols.forEach(c=>{if(pwMap[c.id])c.password=pwMap[c.id]});
+  // Keep any extra colegios that were added after seed
+  const seedIds=new Set(seedCols.map(c=>c.id));
+  const extraCols=(DB.colegios||[]).filter(c=>!seedIds.has(c.id));
+  DB.colegios=[...seedCols,...extraCols];
+  saveDB();
+  alert('✓ Reimportación completada.\n'+DB.clases.length+' clases y '+DB.pares.length+' parejas cargadas desde el seed.');
+  showView('colegios');
+}
+
+function rColegios(){
+  const cols=getColegios();
+  return`<div class="content">
+  <div style="background:#fff3cd;border:1px solid #ffc107;border-radius:10px;padding:16px 20px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;gap:20px">
+    <div>
+      <div style="font-size:13px;font-weight:600;color:#856404;margin-bottom:3px">⚠ Reimportar desde Excel</div>
+      <div style="font-size:12px;color:#856404">Reemplaza todas las clases y parejas en Firebase con los datos del último Excel cargado al código. Las contraseñas de coordinadores se conservan.</div>
+    </div>
+    <button onclick="reimportarSeed()" style="flex-shrink:0;padding:9px 18px;background:#d97706;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;white-space:nowrap">
+      🔄 Reimportar datos
+    </button>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
+    <div class="card">
+      <div class="card-header"><h3>Agregar colegio</h3></div>
+      <div style="padding:16px">
+        <div class="form-grid">
+          <div class="form-group"><label>ID (sin espacios)</label><input type="text" id="nColId" placeholder="ej: lincoln"></div>
+          <div class="form-group"><label>Nombre</label><input type="text" id="nColNombre" placeholder="ej: Lincoln School"></div>
+          <div class="form-group full"><label>Contraseña coordinador</label><input type="password" id="nColPw" placeholder="Contraseña"></div>
+
+        </div>
+        <div style="display:flex;justify-content:flex-end;margin-top:12px">
+          <button class="btn btn-primary" onclick="agregarColegio()">Agregar colegio</button>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><h3>Cambiar contraseña coordinador</h3></div>
+      <div style="padding:16px">
+        <div class="form-grid">
+          <div class="form-group full"><label>Colegio</label>
+            <select id="pwColId">${cols.map(c=>`<option value="${c.id}">${c.nombre}</option>`).join('')}</select>
+          </div>
+          <div class="form-group full"><label>Nueva contraseña</label>
+            <input type="password" id="pwColNew" placeholder="Nueva contraseña">
+          </div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;margin-top:12px">
+          <button class="btn btn-primary" onclick="cambiarPwCoord()">Guardar contraseña</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><h3>${cols.length} colegios registrados</h3></div>
+    <table><thead><tr><th>Nombre</th><th>Contraseña coordinador</th><th>Parejas</th><th>Clases</th><th>Margen total</th><th></th></tr></thead>
+    <tbody>${cols.map(c=>{
+      const pares=paresDeColegio(c.id);
+      const clases=clasesDeColegio(c.id);
+      const tA=clases.reduce((s,cl)=>s+cl.precioApo,0);
+      const tT=clases.reduce((s,cl)=>s+cl.sueldo,0);
+      return`<tr>
+        <td><strong>${c.nombre}</strong><br><span style="font-size:11px;color:#888">${c.id}</span></td>
+        <td><span class="badge badge-gray" style="font-family:monospace">${c.password||'coord2024'}</span></td>
+        <td>${pares.length}</td><td>${clases.length}</td>
+        <td class="amount" style="color:#2563eb">${fmt(tA-tT)}</td>
+        <td><span onclick="eliminarColegio('${c.id}')" style="cursor:pointer;color:#dc2626;font-size:18px;line-height:1" title="Eliminar colegio">×</span></td>
+      </tr>`;
+    }).join('')}</tbody></table>
+    <div style="padding:10px 18px;font-size:11px;color:#888">La contraseña es lo que el coordinador usa para ingresar a su colegio.</div>
+  </div></div>`;
+}
+
+function cambiarPwCoord(){
+  const cid=document.getElementById('pwColId').value;
+  const pw=document.getElementById('pwColNew').value.trim();
+  if(!pw){alert('Ingresa una contraseña');return}
+  if(!DB.colegios)DB.colegios=getColegios().slice();
+  const col=DB.colegios.find(c=>c.id===cid);
+  if(!col){alert('Colegio no encontrado');return}
+  col.password=pw;
+  saveDB();
+  alert('Datos de '+col.nombre+' actualizados.');
+  showView('colegios');
+}
+function agregarColegio(){
+  const id=document.getElementById('nColId').value.trim().toLowerCase().replace(/\s/g,'');
+  const nombre=document.getElementById('nColNombre').value.trim();
+  const pw=document.getElementById('nColPw').value.trim();
+  if(!id||!nombre||!pw){alert('Completa todos los campos');return}
+  if(getColegios().find(c=>c.id===id)){alert('Ya existe ese ID');return}
+  if(!DB.colegios)DB.colegios=getColegios().slice();
+  DB.colegios.push({id,nombre,password:pw,coordinador:''});
+  saveDB();showView('colegios');
+}
+
+function eliminarColegio(id){
+  const col=getColegios().find(c=>c.id===id);
+  if(!col)return;
+  const clases=clasesDeColegio(id).length;
+  const pares=paresDeColegio(id).length;
+  const msg=`¿Eliminar "${col.nombre}"?\n\nEsto también eliminará:\n• ${clases} clase${clases!==1?'s':''}\n• ${pares} pareja${pares!==1?'s':''}\n\nEsta acción no se puede deshacer.`;
+  if(!confirm(msg))return;
+  DB.colegios=DB.colegios.filter(c=>c.id!==id);
+  DB.clases=DB.clases.filter(c=>c.colegio!==id&&!(id==='aleman'&&!c.colegio));
+  DB.pares=DB.pares.filter(p=>p.colegio!==id&&!(id==='aleman'&&!p.colegio));
+  if(DB.pagosTutores){
+    Object.keys(DB.pagosTutores).forEach(k=>{if(k.startsWith(id+'__'))delete DB.pagosTutores[k]});
+  }
+  saveDB();showView('colegios');
+}
+
+function rClasesGlobal(){
+  return`<div class="content">
+  <div class="filter-row">
+    <select id="filCol" onchange="filtrar()"><option value="">Todos los colegios</option>${getColegios().map(c=>`<option value="${c.id}">${c.nombre}</option>`).join('')}</select>
+    <select id="filApo" onchange="filtrar()"><option value="">Todos los apoderados</option>${[...new Set(getPARES().map(x=>x.apo))].sort().map(a=>`<option>${a}</option>`).join('')}</select>
+    <select id="filTutor" onchange="filtrar()"><option value="">Todos los tutores</option>${[...new Set(getPARES().map(x=>x.tutor))].sort().map(t=>`<option>${t}</option>`).join('')}</select>
+    <select id="filMes" onchange="filtrar()"><option value="">Todos los meses</option>${MESES.flatMap((m,i)=>getSelYears().map(y=>`<option value="${i}-${y}">${m} ${y}</option>`)).join('')}</select>
+    <input type="text" id="filQ" placeholder="Buscar..." oninput="filtrar()" style="min-width:120px">
+  </div>
+  <div class="card">
+    <div class="card-header"><h3 id="cCount">Clases</h3><span id="cTot" style="font-size:12px;color:#888"></span></div>
+    <div style="overflow-x:auto"><table style="min-width:850px"><thead><tr>
+      <th>Fecha</th><th>Colegio</th><th>Materia</th><th>Apoderado</th><th>Tutor</th><th>Tipo</th><th>Dur.</th><th>Apo $</th><th>Tutor $</th><th>Margen $</th><th></th>
+    </tr></thead><tbody id="cBody"></tbody></table></div>
+  </div></div>`;
+}
+
+function filtrar(){
+  const col=(document.getElementById('filCol')||{}).value||'';
+  const apo=(document.getElementById('filApo')||{}).value||'';
+  const tut=(document.getElementById('filTutor')||{}).value||'';
+  const mes=document.getElementById('filMes')?document.getElementById('filMes').value:'';
+  const q=(document.getElementById('filQ')||{}).value||'';
+  let data=DB.clases.filter(c=>{
+    if(col&&c.colegio!==col&&!(col==='aleman'&&!c.colegio))return false;
+    if(apo&&c.apoderado!==apo)return false;
+    if(tut&&c.tutor!==tut)return false;
+    if(mes!==''){const[mm,yy]=mes.split('-');if(new Date(c.fecha).getMonth()!==parseInt(mm)||new Date(c.fecha).getFullYear()!==parseInt(yy))return false;}
+    if(q&&!JSON.stringify(c).toLowerCase().includes(q.toLowerCase()))return false;
+    return true;
+  }).sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
+  const tA=data.reduce((s,c)=>s+c.precioApo,0),tT=data.reduce((s,c)=>s+c.sueldo,0);
+  const el=document.getElementById('cCount');if(el)el.textContent=data.length+' clases';
+  const el2=document.getElementById('cTot');if(el2)el2.textContent=`Apo: ${fmt(tA)} | Tutores: ${fmt(tT)} | Margen: ${fmt(tA-tT)}`;
+  const body=document.getElementById('cBody');if(!body)return;
+  const colMap={};getColegios().forEach(c=>colMap[c.id]=c.nombre);
+  body.innerHTML=data.map(c=>`<tr>
+    <td>${fmtD(c.fecha)}</td>
+    <td><span class="badge badge-gray" style="font-size:10px">${colMap[c.colegio]||'Alemán'}</span></td>
+    <td>${c.materia}</td><td>${c.apoderado}</td><td>${c.tutor}</td>
+    <td><span class="badge ${tipoBadge(c.tipo)}">${tipoLabel(c.tipo)}</span></td>
+    <td>${durLabel(c.duracion)}</td>
+    <td class="amount">${fmt(c.precioApo)}</td>
+    <td class="amount" style="color:#dc2626">${fmt(c.sueldo)}</td>
+    <td class="amount" style="color:#2563eb">${fmt(c.precioApo-c.sueldo)}</td>
+    <td><span onclick="delClase(${c.id})" style="cursor:pointer;color:#dc2626;font-size:18px;line-height:1">×</span></td>
+  </tr>`).join('')||'<tr><td colspan="11" style="text-align:center;color:#aaa;padding:32px">Sin clases</td></tr>';
+}
+
+function delClase(id){if(!confirm('¿Eliminar?'))return;DB.clases=DB.clases.filter(c=>c.id!==id);saveDB();filtrar()}
+
+function rParesAdmin(){
+  return`<div class="content">
+  <div class="card" style="max-width:500px;margin-bottom:20px">
+    <div class="card-header"><h3>Agregar pareja</h3></div>
+    <div style="padding:18px">
+      <div class="form-grid">
+        <div class="form-group full"><label>Colegio</label>
+          <select id="fParColegio">${getColegios().map(c=>`<option value="${c.id}">${c.nombre}</option>`).join('')}</select>
+        </div>
+        <div class="form-group full"><label>Nombre apoderado</label><input type="text" id="newApo" placeholder="Nombre completo"></div>
+        <div class="form-group full"><label>Email apoderado</label><input type="email" id="newApoEmail" placeholder="apoderado@email.com"></div>
+        <div class="form-group full"><label>Nombre tutor</label><input type="text" id="newTutor" placeholder="Nombre completo"></div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;margin-top:12px">
+        <button class="btn btn-primary" onclick="agregarPareja()">Agregar pareja</button>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><h3>${getPARES().length} parejas</h3></div>
+    ${getColegios().map(col=>{
+      const pares=paresDeColegio(col.id);
+      if(!pares.length)return'';
+      return`<div style="padding:10px 18px 4px;font-size:12px;font-weight:600;color:#555;border-top:1px solid #f0f0f0">${col.nombre}</div>
+      <table><thead><tr><th>Código</th><th>Apoderado</th><th>Tutor</th><th>Clases</th><th></th></tr></thead>
+      <tbody>${pares.map(p=>{const n=DB.clases.filter(c=>c.codigo===p.cod).length;
+        return`<tr>
+          <td><span class="badge badge-blue" style="font-family:monospace">${p.cod}</span></td>
+          <td>${p.apo}</td><td>${p.tutor}</td><td>${n||'-'}</td>
+          <td>${n?'':`<span onclick="eliminarPareja('${p.cod}')" style="cursor:pointer;color:#dc2626;font-size:18px">×</span>`}</td>
+        </tr>`;
+      }).join('')}</tbody></table>`;
+    }).join('')}
+  </div></div>`;
+}
+
+function rTarifas(){
+  const tipos=[{k:'aleman_sede',lbl:'Clásico'},{k:'abi',lbl:'ABI'},{k:'universitaria',lbl:'Universitaria'}];
+  const durs=[{f:0.5,lbl:'30 min'},{f:0.75,lbl:'45 min'},{f:1,lbl:'1 hora'},{f:1.5,lbl:'1:30 hr'},{f:2,lbl:'2 horas'}];
+  const maxAl={aleman_sede:4,abi:2,universitaria:1};
+  return`<div class="content">${tipos.map(tp=>`<div class="card" style="margin-bottom:20px">
+    <div class="card-header"><h3>${tp.lbl}</h3></div>
+    ${['presencial','online'].map(mod=>`
+      <div style="padding:8px 18px 2px;font-size:11px;font-weight:600;color:#888;text-transform:uppercase;border-top:1px solid #f0f0f0">${mod}</div>
+      <div style="overflow-x:auto"><table style="min-width:500px"><thead><tr>
+        <th>Duración</th><th>Alumnos</th><th style="color:#1e40af">Apo paga</th><th style="color:#166534">Tutor recibe</th><th style="color:#c2410c">Margen</th>
+      </tr></thead><tbody>
+      ${durs.flatMap(d=>Array.from({length:maxAl[tp.k]||1},(_,i)=>{
+        const n=i+1;const p=calcPrecio(tp.k,mod,n,d.f);
+        return`<tr><td>${i===0?d.lbl:''}</td><td>${n} alumno${n>1?'s':''}</td>
+          <td class="amount" style="color:#1e40af;font-weight:500">${fmt(p.p)}</td>
+          <td class="amount" style="color:#166534;font-weight:500">${fmt(p.s)}</td>
+          <td class="amount" style="color:#c2410c;font-weight:500">${fmt(p.m)}</td></tr>`;
+      })).join('')}</tbody></table></div>`).join('')}
+  </div>`).join('')}</div>`;
+}
+
+// ════════════════════════════════
+// COORDINADOR VIEWS
+// ════════════════════════════════
+
+function rDashCoord(){
+  const cl=monthClasesColegio(currentColegio);
+  const tA=cl.reduce((s,c)=>s+c.precioApo,0);
+  const tT=cl.reduce((s,c)=>s+c.sueldo,0);
+  const tM=tA-tT;
+  const bA={},bT={};
+  cl.forEach(c=>{
+    if(!bA[c.apoderado])bA[c.apoderado]={cl:0,m:0};bA[c.apoderado].cl++;bA[c.apoderado].m+=c.precioApo;
+    if(!bT[c.tutor])bT[c.tutor]={cl:0,m:0};bT[c.tutor].cl++;bT[c.tutor].m+=c.sueldo;
+  });
+  return`<div class="content">
+  <div style="margin-bottom:16px;padding:10px 14px;background:#eff6ff;border-radius:8px;font-size:13px;color:#1e40af">
+    📍 <strong>${colNombre(currentColegio)}</strong> — ${MESES[selMonth]} ${selYear}
+  </div>
+  <div class="stats-grid">
+    <div class="stat-card"><div class="stat-label">Clases este mes</div><div class="stat-value">${cl.length}</div></div>
+    <div class="stat-card"><div class="stat-label">Cobras a apoderados</div><div class="stat-value" style="color:#2563eb">${fmt(tA)}</div></div>
+    <div class="stat-card"><div class="stat-label">Pagas a tutores</div><div class="stat-value" style="color:#dc2626">${fmt(tT)}</div></div>
+    <div class="stat-card"><div class="stat-label">Tu margen bruto</div><div class="stat-value" style="color:#16a34a">${fmt(tM)}</div><div class="stat-sub">${tA>0?Math.round(tM/tA*100)+'%':'-'}</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+    <div class="card"><div class="card-header"><h3>Cobrar a apoderados</h3><span style="font-weight:600;color:#2563eb">${fmt(tA)}</span></div>
+    <table><thead><tr><th>Apoderado</th><th>Clases</th><th>A cobrar</th></tr></thead><tbody>
+    ${Object.entries(bA).sort((a,b)=>b[1].m-a[1].m).map(([a,d])=>`<tr>
+      <td><span class="avatar ${avc(a)}">${ini(a)}</span>${a}</td>
+      <td>${d.cl}</td><td class="amount" style="color:#2563eb;font-weight:500">${fmt(d.m)}</td></tr>`).join('')}
+    ${!Object.keys(bA).length?'<tr><td colspan="3" style="text-align:center;color:#aaa;padding:24px">Sin clases</td></tr>':''}
+    </tbody></table></div>
+    <div class="card"><div class="card-header"><h3>Pagar a tutores</h3><span style="font-weight:600;color:#dc2626">${fmt(tT)}</span></div>
+    <table><thead><tr><th>Tutor</th><th>Clases</th><th>A pagar</th></tr></thead><tbody>
+    ${Object.entries(bT).sort((a,b)=>b[1].m-a[1].m).map(([t,d])=>`<tr>
+      <td><span class="avatar ${avc(t)}">${ini(t)}</span>${t}</td>
+      <td>${d.cl}</td><td class="amount" style="color:#dc2626;font-weight:500">${fmt(d.m)}</td></tr>`).join('')}
+    ${!Object.keys(bT).length?'<tr><td colspan="3" style="text-align:center;color:#aaa;padding:24px">Sin clases</td></tr>':''}
+    </tbody></table></div>
+  </div>
+  <div class="card"><div class="card-header"><h3>Últimas clases</h3><button class="btn" onclick="showView('clases-coord')">Ver todas</button></div>
+  <table><thead><tr><th>Fecha</th><th>Materia</th><th>Apoderado</th><th>Tutor</th><th>Dur.</th><th>Apo $</th><th>Tutor $</th></tr></thead><tbody>
+  ${clasesDeColegio(currentColegio).sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)).slice(0,6).map(c=>`<tr>
+    <td>${fmtD(c.fecha)}</td><td>${c.materia}</td><td>${c.apoderado}</td><td>${c.tutor}</td>
+    <td>${durLabel(c.duracion)}</td><td class="amount">${fmt(c.precioApo)}</td>
+    <td class="amount" style="color:#dc2626">${fmt(c.sueldo)}</td></tr>`).join('')}
+  </tbody></table></div>
+  </div>`;
+}
+
+function pagoTutorKey(tutor,colegio,mes,yr){
+  return `${colegio}__${tutor.replace(/\s+/g,'_')}__${mes}__${yr}`;
+}
+function isPagadoTutor(tutor){
+  if(!DB.pagosTutores)return false;
+  return !!DB.pagosTutores[pagoTutorKey(tutor,currentColegio,selMonth,selYear)];
+}
+function togglePagoTutor(tutor){
+  if(!DB.pagosTutores)DB.pagosTutores={};
+  const k=pagoTutorKey(tutor,currentColegio,selMonth,selYear);
+  if(DB.pagosTutores[k]){
+    delete DB.pagosTutores[k];
+  } else {
+    DB.pagosTutores[k]={pagado:true,fecha:new Date().toISOString().split('T')[0],por:user};
+  }
+  saveDB();
+  showView('pagos-coord');
+}
+
+function rPagosCoord(){
+  const cl=monthClasesColegio(currentColegio);
+  const bA={},bT={};
+  cl.forEach(c=>{
+    if(!bA[c.apoderado])bA[c.apoderado]={cl:[],t:0};bA[c.apoderado].cl.push(c);bA[c.apoderado].t+=c.precioApo;
+    if(!bT[c.tutor])bT[c.tutor]={cl:[],t:0};bT[c.tutor].cl.push(c);bT[c.tutor].t+=c.sueldo;
+  });
+  const tA=Object.values(bA).reduce((s,v)=>s+v.t,0);
+  const tT=Object.values(bT).reduce((s,v)=>s+v.t,0);
+  const tutoresEntries=Object.entries(bT).sort((a,b)=>b[1].t-a[1].t);
+  const pagados=tutoresEntries.filter(([t])=>isPagadoTutor(t));
+  const pendientes=tutoresEntries.filter(([t])=>!isPagadoTutor(t));
+  const tPagado=pagados.reduce((s,[,d])=>s+d.t,0);
+  const tPendiente=pendientes.reduce((s,[,d])=>s+d.t,0);
+
+  return`<div class="content">
+  <div style="margin-bottom:16px;padding:10px 14px;background:#eff6ff;border-radius:8px;font-size:13px;color:#1e40af">
+    📍 <strong>${colNombre(currentColegio)}</strong> — ${MESES[selMonth]} ${selYear} · ${cl.length} clases
+  </div>
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:20px">
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;flex:1;min-width:300px">
+      <div class="stat-card"><div class="stat-label">Cobras a apoderados</div><div class="stat-value" style="color:#2563eb">${fmt(tA)}</div></div>
+      <div class="stat-card"><div class="stat-label">Total a pagar tutores</div><div class="stat-value" style="color:#dc2626">${fmt(tT)}</div></div>
+      <div class="stat-card" style="background:#fef2f2"><div class="stat-label">Pendiente de pago</div><div class="stat-value" style="color:#dc2626">${fmt(tPendiente)}</div></div>
+      <div class="stat-card" style="background:#f0fdf4"><div class="stat-label">Ya pagado</div><div class="stat-value" style="color:#16a34a">${fmt(tPagado)}</div></div>
+    </div>
+    ${cl.length?`<button onclick="enviarTodosLosCobros('${currentColegio}')"
+      style="padding:10px 18px;background:#2563eb;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;white-space:nowrap;height:fit-content">
+      📧 Enviar cobros a apoderados
+    </button>`:''}
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+    <div>
+      <div style="font-size:11px;font-weight:600;color:#1e40af;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">↓ Cobrar a apoderados</div>
+      ${Object.entries(bA).sort((a,b)=>b[1].t-a[1].t).map(([a,d])=>{
+        const apoEmail=getApoEmail(a,currentColegio);
+        const mailLink=apoEmail?buildCobroEmail(a,d.cl,d.t,currentColegio):'';
+        return`<div class="card" style="margin-bottom:10px"><div style="padding:14px 16px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <div style="display:flex;align-items:center;font-weight:500"><span class="avatar ${avc(a)}">${ini(a)}</span>
+              <div><div>${a}</div>${apoEmail?`<div style="font-size:11px;color:#888">${apoEmail}</div>`:`<div style="font-size:11px;color:#f59e0b">⚠ Sin email registrado</div>`}</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <div style="font-size:17px;font-weight:600;color:#2563eb">${fmt(d.t)}</div>
+              ${mailLink?`<button onclick="window.open('${mailLink}','_blank')" style="padding:7px 12px;background:#2563eb;color:#fff;border:none;border-radius:7px;cursor:pointer;font-size:12px;font-weight:500;white-space:nowrap">📧 Enviar cobro</button>`:''}
+            </div>
+          </div>
+          <div style="font-size:11px;color:#888">${d.cl.length} clase${d.cl.length!==1?'s':''} · ${d.cl.map(c=>fmtD(c.fecha)).join(', ')}</div>
+        </div></div>`;
+      }).join('')}
+      <div style="padding:12px 16px;background:#eff6ff;border-radius:8px;display:flex;justify-content:space-between;font-weight:600;color:#1e40af"><span>Total a cobrar</span><span>${fmt(tA)}</span></div>
+    </div>
+    <div>
+      <div style="font-size:11px;font-weight:600;color:#dc2626;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">↑ Pagar a tutores</div>
+
+      ${pendientes.length?`<div style="font-size:11px;color:#888;font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;margin-top:4px">Pendientes</div>`:''}
+      ${pendientes.map(([t,d])=>`
+      <div class="card" style="margin-bottom:10px;border-left:3px solid #fca5a5">
+        <div style="padding:14px 16px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <div style="display:flex;align-items:center;font-weight:500"><span class="avatar ${avc(t)}">${ini(t)}</span>${t}</div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <div style="font-size:17px;font-weight:600;color:#dc2626">${fmt(d.t)}</div>
+              <button onclick="togglePagoTutor('${t.replace(/'/g,"\\'")}')"
+                style="padding:6px 12px;background:#16a34a;color:#fff;border:none;border-radius:7px;cursor:pointer;font-size:12px;font-weight:600;white-space:nowrap">
+                ✓ Marcar pagado
+              </button>
+            </div>
+          </div>
+          <div style="font-size:11px;color:#888">${d.cl.length} clase${d.cl.length!==1?'s':''}</div>
+        </div>
+      </div>`).join('')}
+
+      ${pagados.length?`<div style="font-size:11px;color:#16a34a;font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;margin-top:${pendientes.length?'12px':'4px'}">Pagados</div>`:''}
+      ${pagados.map(([t,d])=>{
+        const info=DB.pagosTutores[pagoTutorKey(t,currentColegio,selMonth,selYear)];
+        return`<div class="card" style="margin-bottom:10px;border-left:3px solid #86efac;opacity:.85">
+          <div style="padding:14px 16px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+              <div style="display:flex;align-items:center;font-weight:500"><span class="avatar av-green">${ini(t)}</span>${t}</div>
+              <div style="display:flex;align-items:center;gap:10px">
+                <div style="font-size:17px;font-weight:600;color:#16a34a">${fmt(d.t)}</div>
+                <button onclick="togglePagoTutor('${t.replace(/'/g,"\\'")}')"
+                  style="padding:6px 12px;background:#f3f4f6;color:#6b7280;border:none;border-radius:7px;cursor:pointer;font-size:12px;font-weight:500;white-space:nowrap">
+                  Desmarcar
+                </button>
+              </div>
+            </div>
+            <div style="font-size:11px;color:#16a34a">✓ Pagado el ${fmtD(info.fecha)}</div>
+          </div>
+        </div>`;
+      }).join('')}
+
+      ${!tutoresEntries.length?'<div style="text-align:center;padding:32px;color:#aaa">Sin tutores este mes</div>':''}
+      <div style="padding:12px 16px;background:#fef2f2;border-radius:8px;display:flex;justify-content:space-between;font-weight:600;color:#dc2626;margin-bottom:8px"><span>Pendiente de pago</span><span>${fmt(tPendiente)}</span></div>
+      <div style="padding:12px 16px;background:#f0fdf4;border-radius:8px;display:flex;justify-content:space-between;font-weight:600;color:#16a34a;margin-bottom:8px"><span>Ya pagado</span><span>${fmt(tPagado)}</span></div>
+      <div style="padding:12px 16px;background:#f9fafb;border-radius:8px;display:flex;justify-content:space-between;font-weight:600;color:#2563eb"><span>Tu margen bruto</span><span>${fmt(tA-tT)}</span></div>
+    </div>
+  </div></div>`;
+}
+
+function rClasesCoord(){
+  const cl=clasesDeColegio(currentColegio).sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
+  const tA=cl.reduce((s,c)=>s+c.precioApo,0),tT=cl.reduce((s,c)=>s+c.sueldo,0);
+  return`<div class="content">
+  <div style="margin-bottom:12px;padding:10px 14px;background:#eff6ff;border-radius:8px;font-size:13px;color:#1e40af">📍 <strong>${colNombre(currentColegio)}</strong></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px">
+    <div class="stat-card"><div class="stat-label">Clases totales</div><div class="stat-value">${cl.length}</div></div>
+    <div class="stat-card"><div class="stat-label">Total cobrado apos</div><div class="stat-value">${fmt(tA)}</div></div>
+    <div class="stat-card"><div class="stat-label">Total pagado tutores</div><div class="stat-value" style="color:#dc2626">${fmt(tT)}</div></div>
+  </div>
+  <div class="card">
+    <div class="card-header"><h3>${cl.length} clases</h3><button class="btn btn-primary" onclick="openModal()">+ Registrar clase</button></div>
+    <div style="overflow-x:auto"><table style="min-width:700px"><thead><tr>
+      <th>Fecha</th><th>Materia</th><th>Apoderado</th><th>Tutor</th><th>Tipo</th><th>Dur.</th><th>Apo $</th><th>Tutor $</th><th></th>
+    </tr></thead><tbody>
+    ${cl.map(c=>`<tr>
+      <td>${fmtD(c.fecha)}</td><td>${c.materia}</td><td>${c.apoderado}</td><td>${c.tutor}</td>
+      <td><span class="badge ${tipoBadge(c.tipo)}">${tipoLabel(c.tipo)}</span></td>
+      <td>${durLabel(c.duracion)}</td>
+      <td class="amount">${fmt(c.precioApo)}</td>
+      <td class="amount" style="color:#dc2626">${fmt(c.sueldo)}</td>
+      <td><span onclick="delClaseCoord(${c.id})" style="cursor:pointer;color:#dc2626;font-size:18px;line-height:1">×</span></td>
+    </tr>`).join('')}
+    ${!cl.length?'<tr><td colspan="9" style="text-align:center;color:#aaa;padding:32px">Sin clases</td></tr>':''}
+    </tbody></table></div>
+  </div></div>`;
+}
+
+function delClaseCoord(id){if(!confirm('¿Eliminar?'))return;DB.clases=DB.clases.filter(c=>c.id!==id);saveDB();showView('clases-coord')}
+
+function rParesCoord(){
+  const pares=paresDeColegio(currentColegio);
+  return`<div class="content">
+  <div style="margin-bottom:12px;padding:10px 14px;background:#eff6ff;border-radius:8px;font-size:13px;color:#1e40af">📍 <strong>${colNombre(currentColegio)}</strong></div>
+  <div class="card" style="max-width:500px;margin-bottom:20px">
+    <div class="card-header"><h3>Agregar pareja</h3></div>
+    <div style="padding:18px">
+      <div class="form-grid">
+        <div class="form-group full"><label>Nombre apoderado</label>
+          <input type="text" id="newApo" placeholder="Nombre completo" list="apoListC">
+          <datalist id="apoListC">${[...new Set(pares.map(p=>p.apo))].map(a=>`<option value="${a}">`).join('')}</datalist>
+        </div>
+        <div class="form-group full"><label>Email apoderado</label>
+          <input type="email" id="newApoEmail" placeholder="apoderado@email.com">
+        </div>
+        <div class="form-group full"><label>Nombre tutor</label>
+          <input type="text" id="newTutor" placeholder="Nombre completo" list="tutListC">
+          <datalist id="tutListC">${[...new Set(pares.map(p=>p.tutor))].map(t=>`<option value="${t}">`).join('')}</datalist>
+        </div>
+      </div>
+      <div style="font-size:11px;color:#888;margin-top:10px;padding:8px;background:#f9f9f9;border-radius:6px">El código se genera automáticamente. El tutor podrá ingresar con su nombre.</div>
+      <div style="display:flex;justify-content:flex-end;margin-top:12px">
+        <button class="btn btn-primary" onclick="agregarPareja()">Agregar pareja</button>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><h3>${pares.length} parejas</h3></div>
+    <table><thead><tr><th>Código</th><th>Apoderado</th><th>Tutor</th><th>Clases</th><th></th></tr></thead>
+    <tbody>${pares.map(p=>{const n=DB.clases.filter(c=>c.codigo===p.cod).length;
+      return`<tr>
+        <td><span class="badge badge-blue" style="font-family:monospace">${p.cod}</span></td>
+        <td>${p.apo}</td><td>${p.tutor}</td><td>${n||'-'}</td>
+        <td>${n?'':`<span onclick="eliminarPareja('${p.cod}')" style="cursor:pointer;color:#dc2626;font-size:18px">×</span>`}</td>
+      </tr>`;
+    }).join('')}
+    ${!pares.length?'<tr><td colspan="5" style="text-align:center;color:#aaa;padding:32px">Sin parejas</td></tr>':''}
+    </tbody></table>
+  </div></div>`;
+}
+
+function rTutoresCoord(){
+  const pares=paresDeColegio(currentColegio);
+  const stats={};
+  clasesDeColegio(currentColegio).forEach(c=>{
+    if(!stats[c.tutor])stats[c.tutor]={cl:0,m:0,apos:new Set()};
+    stats[c.tutor].cl++;stats[c.tutor].m+=c.sueldo;stats[c.tutor].apos.add(c.apoderado);
+  });
+  const tutores=[...new Set(pares.map(p=>p.tutor))].sort();
+  return`<div class="content">
+  <div style="margin-bottom:16px;padding:10px 14px;background:#eff6ff;border-radius:8px;font-size:13px;color:#1e40af">📍 <strong>${colNombre(currentColegio)}</strong> — ${tutores.length} tutores</div>
+  ${tutores.map(t=>{const s=stats[t]||{cl:0,m:0,apos:new Set()};const apos=pares.filter(p=>p.tutor===t).map(p=>p.apo);
+    return`<div class="tutor-card"><div class="tutor-card-header">
+      <div class="tutor-name"><span class="avatar ${avc(t)}" style="width:36px;height:36px;font-size:13px;margin-right:10px">${ini(t)}</span>
+      <div><div>${t}</div><div style="font-size:11px;color:#888;margin-top:2px">${apos.length} apoderado${apos.length!==1?'s':''}</div></div></div>
+      <div class="tutor-stats">
+        <div class="tutor-stat"><div class="n">${s.cl}</div><div class="l">Clases</div></div>
+        <div class="tutor-stat"><div class="n">${fmt(s.m)}</div><div class="l">Total a pagar</div></div>
+      </div></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">${apos.map(a=>`<span class="badge badge-gray">${a}</span>`).join('')}</div>
+    </div>`;
+  }).join('')}
+  ${!tutores.length?'<div style="text-align:center;padding:48px;color:#aaa">Sin tutores</div>':''}
+  </div>`;
+}
+
+function rApoderadosCoord(){
+  const pares=paresDeColegio(currentColegio);
+  const stats={};
+  clasesDeColegio(currentColegio).forEach(c=>{
+    if(!stats[c.apoderado])stats[c.apoderado]={cl:0,m:0};stats[c.apoderado].cl++;stats[c.apoderado].m+=c.precioApo;
+  });
+  const apoderados=[...new Set(pares.map(p=>p.apo))].sort();
+  return`<div class="content">
+  <div style="margin-bottom:16px;padding:10px 14px;background:#eff6ff;border-radius:8px;font-size:13px;color:#1e40af">📍 <strong>${colNombre(currentColegio)}</strong> — ${apoderados.length} apoderados</div>
+  <div class="card"><table>
+    <thead><tr><th>Apoderado</th><th>Email</th><th>Tutores</th><th>Clases</th><th>Total a cobrar</th></tr></thead>
+    <tbody>${apoderados.map(a=>{const s=stats[a]||{cl:0,m:0};const pr=pares.filter(p=>p.apo===a);
+      return`<tr><td><span class="avatar ${avc(a)}">${ini(a)}</span>${a}</td>
+        <td>${pr.map(p=>p.tutor).join(', ')}</td>
+        <td>${s.cl}</td><td class="amount" style="color:#2563eb;font-weight:500">${s.cl>0?fmt(s.m):'-'}</td></tr>`;
+    }).join('')}
+    ${!apoderados.length?'<tr><td colspan="4" style="text-align:center;color:#aaa;padding:32px">Sin apoderados</td></tr>':''}
+    </tbody></table></div>
+  </div>`;
+}
+
+// ════════════════════════════════
+// TUTOR VIEWS
+// ════════════════════════════════
+
+function rMisClases(){
+  const mc=DB.clases.filter(c=>c.tutor===user).sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
+  const mesC=mc.filter(c=>{const d=new Date(c.fecha);return d.getMonth()===selMonth&&d.getFullYear()===selYear});
+  return`<div class="content">
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">
+    <div class="stat-card"><div class="stat-label">Clases este mes</div><div class="stat-value">${mesC.length}</div></div>
+    <div class="stat-card"><div class="stat-label">A cobrar este mes</div><div class="stat-value" style="color:#2563eb">${fmt(mesC.reduce((s,c)=>s+c.sueldo,0))}</div></div>
+    <div class="stat-card"><div class="stat-label">Total histórico</div><div class="stat-value">${mc.length}</div></div>
+  </div>
+  <div class="card"><div class="card-header"><h3>Historial</h3><button class="btn btn-primary" onclick="openModal()">+ Registrar clase</button></div>
+  <table><thead><tr><th>Fecha</th><th>Materia</th><th>Apoderado</th><th>Tipo</th><th>Duración</th><th>Modalidad</th><th>Monto</th><th></th></tr></thead>
+  <tbody>${mc.map(c=>`<tr><td>${fmtD(c.fecha)}</td><td>${c.materia}</td><td>${c.apoderado}</td>
+    <td><span class="badge ${tipoBadge(c.tipo)}">${tipoLabel(c.tipo)}</span></td>
+    <td>${durLabel(c.duracion)}</td>
+    <td><span class="badge ${c.modalidad==='online'?'badge-blue':'badge-green'}">${c.modalidad}</span></td>
+    <td class="amount">${fmt(c.sueldo)}</td>
+    <td><span onclick="delClaseTutor(${c.id})" style="cursor:pointer;color:#dc2626;font-size:18px;line-height:1">×</span></td>
+  </tr>`).join('')}
+  ${!mc.length?'<tr><td colspan="8" style="text-align:center;color:#aaa;padding:32px">Sin clases</td></tr>':''}
+  </tbody></table></div></div>`;
+}
+
+function delClaseTutor(id){if(!confirm('¿Eliminar?'))return;DB.clases=DB.clases.filter(c=>c.id!==id);saveDB();showView('mis-clases')}
+
+function rNuevaClase(){
+  const mp=paresDeColegio(currentColegio).filter(p=>p.tutor===user);
+  return`<div class="content"><div class="card" style="max-width:560px"><div class="card-header"><h3>Nueva clase</h3></div>
+  <div class="modal-body"><div class="form-grid">
+    <div class="form-group"><label>Fecha</label><input type="date" id="nFecha" value="${new Date().toISOString().split('T')[0]}"></div>
+    <div class="form-group"><label>Materia</label><select id="nMateria"><option>Matemáticas</option><option>Inglés</option><option>Biología</option><option>Física</option><option>Historia</option><option>Química</option><option>Alemán</option><option>Otro</option></select></div>
+    <div class="form-group full"><label>Apoderado</label><select id="nApo">${mp.map(p=>`<option value="${p.apo}">${p.apo} (${p.cod})</option>`).join('')}</select></div>
+    <div class="form-group"><label>Tipo</label><select id="nTipo">${tiposParaColegio(currentColegio).map(t=>`<option value="${t.v}">${t.l}</option>`).join('')}</select></div>
+    <div class="form-group"><label>Alumnos</label><select id="nAlumnos"><option value="1">1 alumno</option><option value="2">2 (grupal)</option><option value="3">3 (grupal)</option><option value="4">4 (grupal)</option></select></div>
+    <div class="form-group"><label>Modalidad</label><select id="nMod"><option value="presencial">Presencial</option><option value="online">Online</option></select></div>
+    <div class="form-group"><label>Duración</label><select id="nDur"><option value="0.5">30 min</option><option value="0.75">45 min</option><option value="1" selected>1 hora</option><option value="1.5">1:30 hr</option><option value="2">2 horas</option></select></div>
+    <div class="form-group full"><label>Observaciones</label><textarea id="nObs" rows="2" style="resize:none"></textarea></div>
+  </div>
+  <div style="padding:10px;background:#f9f9f9;border-radius:6px;font-size:12px;color:#666;margin-top:10px">El precio se calcula automáticamente.</div>
+  <div style="display:flex;justify-content:flex-end;margin-top:14px"><button class="btn btn-primary" onclick="guardarTutor()">Guardar clase</button></div>
+  </div></div></div>`;
+}
+
+function guardarTutor(){
+  const apo=document.getElementById('nApo').value;
+  const par=paresDeColegio(currentColegio).find(p=>p.apo===apo&&p.tutor===user);
+  const tipo=document.getElementById('nTipo').value;
+  const mod=document.getElementById('nMod').value;
+  const al=document.getElementById('nAlumnos').value;
+  const dur=parseFloat(document.getElementById('nDur').value);
+  const p=calcPrecio(tipo,mod,al,dur);
+  DB.clases.push({id:DB.nextId++,fecha:document.getElementById('nFecha').value,
+    materia:document.getElementById('nMateria').value,apoderado:apo,tutor:user,
+    codigo:par?par.cod:'',colegio:currentColegio,tipo,alumnos:parseInt(al),modalidad:mod,duracion:dur,
+    precioApo:p.p,sueldo:p.s,obs:document.getElementById('nObs').value});
+  saveDB();alert('Clase registrada');showView('mis-clases');
+}
+
+function rMisPagos(){
+  const pm={};DB.clases.filter(c=>c.tutor===user).forEach(c=>{
+    const d=new Date(c.fecha);const k=`${d.getFullYear()}-${d.getMonth()}`;
+    if(!pm[k])pm[k]={mes:d.getMonth(),yr:d.getFullYear(),cl:0,t:0};pm[k].cl++;pm[k].t+=c.sueldo;
+  });
+  return`<div class="content"><div class="card"><table>
+    <thead><tr><th>Mes</th><th>Clases</th><th>A cobrar</th></tr></thead>
+    <tbody>${Object.values(pm).sort((a,b)=>b.yr-a.yr||b.mes-a.mes).map(m=>`<tr>
+      <td>${MESES[m.mes]} ${m.yr}</td><td>${m.cl}</td><td class="amount">${fmt(m.t)}</td></tr>`).join('')}
+    ${!Object.keys(pm).length?'<tr><td colspan="3" style="text-align:center;color:#aaa;padding:32px">Sin clases</td></tr>':''}
+    </tbody></table></div></div>`;
+}
+
+// ════════════════════════════════
+// APODERADO VIEWS
+// ════════════════════════════════
+
+function rMisClasesApo(){
+  const mc=DB.clases.filter(c=>c.apoderado===user).sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
+  return`<div class="content"><div class="card">
+  <div class="card-header"><h3>${mc.length} clases</h3></div>
+  <table><thead><tr><th>Fecha</th><th>Materia</th><th>Tutor</th><th>Tipo</th><th>Duración</th><th>Modalidad</th><th>Monto</th></tr></thead>
+  <tbody>${mc.map(c=>`<tr><td>${fmtD(c.fecha)}</td><td>${c.materia}</td><td>${c.tutor}</td>
+    <td><span class="badge ${tipoBadge(c.tipo)}">${tipoLabel(c.tipo)}</span></td>
+    <td>${durLabel(c.duracion)}</td>
+    <td><span class="badge ${c.modalidad==='online'?'badge-blue':'badge-green'}">${c.modalidad}</span></td>
+    <td class="amount">${fmt(c.precioApo)}</td></tr>`).join('')}
+  ${!mc.length?'<tr><td colspan="7" style="text-align:center;color:#aaa;padding:32px">Sin clases</td></tr>':''}
+  </tbody></table></div></div>`;
+}
+
+function getApoEmail(apo, cid){
+  const par=getPARES().find(p=>p.apo===apo&&(p.colegio===cid||(!p.colegio&&cid==='aleman')));
+  return par&&par.apoEmail?par.apoEmail:'';
+}
+
+function getCoordEmail(){
+  const col=getColegios().find(c=>c.id===currentColegio);
+  return col&&col.email?col.email:'';
+}
+
+function rMiResumen(){
+  const pm={};DB.clases.filter(c=>c.apoderado===user).forEach(c=>{
+    const d=new Date(c.fecha);const k=`${d.getFullYear()}-${d.getMonth()}`;
+    if(!pm[k])pm[k]={mes:d.getMonth(),yr:d.getFullYear(),cl:[],t:0};pm[k].cl.push(c);pm[k].t+=c.precioApo;
+  });
+  const coordEmail=getCoordEmail();
+  return`<div class="content">
+`+((()=>{
+    const par=getPARES().find(p=>p.apo===user&&(p.colegio===currentColegio||(!p.colegio&&currentColegio==='aleman')));
+    const email=par&&par.apoEmail?par.apoEmail:'';
+    return email
+      ?`<div style="margin-bottom:16px;padding:10px 14px;background:#f0fdf4;border-radius:8px;font-size:13px;color:#166534">✓ Los cobros se enviarán a <strong>${email}</strong> · <span onclick="showView('mi-perfil')" style="cursor:pointer;text-decoration:underline">Cambiar</span></div>`
+      :`<div style="margin-bottom:16px;padding:10px 14px;background:#fef9c3;border-radius:8px;font-size:13px;color:#854d0e">⚠ No tienes email registrado. <span onclick="showView('mi-perfil')" style="cursor:pointer;text-decoration:underline;font-weight:600">Agregar email →</span></div>`;
+  })())+`
+  ${Object.values(pm).sort((a,b)=>b.yr-a.yr||b.mes-a.mes).map(m=>`
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-header">
+        <div>
+          <h3>${MESES[m.mes]} ${m.yr}</h3>
+          <div style="font-size:12px;color:#888;margin-top:2px">${m.cl.length} clases</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <span style="font-size:18px;font-weight:600">${fmt(m.t)}</span>
+
+        </div>
+      </div>
+      <table><thead><tr><th>Fecha</th><th>Materia</th><th>Tutor</th><th>Duración</th><th>Monto</th></tr></thead>
+      <tbody>${m.cl.map(c=>`<tr><td>${fmtD(c.fecha)}</td><td>${c.materia}</td><td>${c.tutor}</td>
+        <td>${durLabel(c.duracion)}</td><td class="amount">${fmt(c.precioApo)}</td></tr>`).join('')}</tbody>
+    </table></div>`).join('')}
+  ${!Object.keys(pm).length?'<div style="text-align:center;padding:48px;color:#aaa">Sin clases registradas</div>':''}
+  </div>`;
+}
+
+// ════════════════════════════════
+// MODAL HELPERS
+// ════════════════════════════════
+
+function openModal(){
+  const isAdmin=role==='superadmin';
+  const colBox=document.getElementById('fColegioBox');
+  if(colBox)colBox.style.display=isAdmin?'':'none';
+  const colSel=document.getElementById('fColegio');
+  if(isAdmin){
+    colSel.innerHTML='';
+    getColegios().forEach(c=>{const o=document.createElement('option');o.value=c.id;o.textContent=c.nombre;colSel.appendChild(o)});
+  } else {
+    // For coordinador/tutor: set their colegio (hidden from view but value is set)
+    if(colSel){
+      colSel.innerHTML=`<option value="${currentColegio}">${colNombre(currentColegio)}</option>`;
+      colSel.value=currentColegio;
+    }
+  }
+  const ppBox=document.getElementById('ppMargenBox');
+  if(ppBox)ppBox.style.display=isAdmin?'':'none';
+  const ppGrid=document.getElementById('ppGrid');
+  if(ppGrid)ppGrid.style.gridTemplateColumns=isAdmin?'1fr 1fr 1fr':'1fr 1fr';
+  const pb=document.getElementById('precioApoBox');if(pb)pb.style.display=isAdmin?'':'none';
+  const sb=document.getElementById('sueldoBox');if(sb)sb.style.display=isAdmin?'':'none';
+  refreshModalApos();
+  const cid2=document.getElementById('fColegio')?document.getElementById('fColegio').value:currentColegio;
+  updateTipoSelect(cid2);
+  document.getElementById('fFecha').value=new Date().toISOString().split('T')[0];
+  recalc();
+  document.getElementById('claseModal').classList.add('open');
+}
+
+function refreshModalApos(){
+  const colSel=document.getElementById('fColegio');
+  const cid=(colSel&&colSel.value)?colSel.value:currentColegio;
+  const sel=document.getElementById('fApo');
+  sel.innerHTML='<option value="">Seleccionar...</option>';
+  let apos;
+  if(role==='tutor'){
+    apos=paresDeColegio(cid).filter(p=>p.tutor===user).map(p=>p.apo);
+  }else{
+    apos=[...new Set(paresDeColegio(cid).map(p=>p.apo))].sort();
+  }
+  apos.forEach(a=>{const o=document.createElement('option');o.value=a;o.textContent=a;sel.appendChild(o)});
+}
+
+function onModalColegioChange(){
+  const colSel=document.getElementById('fColegio');
+  const cid=colSel?colSel.value:currentColegio;
+  refreshModalApos();
+  document.getElementById('fCod').value='';
+  updateTipoSelect(cid);
+}
+
+function onApoChange(){
+  const apo=document.getElementById('fApo').value;
+  const colSel=document.getElementById('fColegio');
+  const cid=colSel?colSel.value:currentColegio;
+  const par=role==='tutor'
+    ?paresDeColegio(cid).find(p=>p.apo===apo&&p.tutor===user)
+    :paresDeColegio(cid).find(p=>p.apo===apo);
+  document.getElementById('fCod').value=par?par.cod:'';
+}
+
+function recalc(){
+  const tipo=(document.getElementById('fTipo')||{}).value||'aleman_sede';
+  const mod=(document.getElementById('fMod')||{}).value||'presencial';
+  const al=(document.getElementById('fAlumnos')||{}).value||1;
+  const dur=parseFloat((document.getElementById('fDur')||{}).value||1);
+  const p=calcPrecio(tipo,mod,al,dur);
+  const a=document.getElementById('ppApo');if(a)a.textContent=fmt(p.p);
+  const b=document.getElementById('ppTutor');if(b)b.textContent=fmt(p.s);
+  const c=document.getElementById('ppMargen');if(c)c.textContent=fmt(p.m);
+  const d=document.getElementById('fPrecioApo');if(d)d.value=p.p;
+  const e=document.getElementById('fSueldo');if(e)e.value=p.s;
+}
+
+function closeModal(){document.getElementById('claseModal').classList.remove('open')}
+
+function saveClase(){
+  const apo=document.getElementById('fApo').value;
+  if(!apo){alert('Selecciona un apoderado');return}
+  const colSel=document.getElementById('fColegio');
+  const cid=colSel?colSel.value:currentColegio;
+  const tipo=document.getElementById('fTipo').value;
+  const mod=document.getElementById('fMod').value;
+  const al=parseInt(document.getElementById('fAlumnos').value);
+  const dur=parseFloat(document.getElementById('fDur').value);
+  const par=role==='tutor'
+    ?paresDeColegio(cid).find(p=>p.apo===apo&&p.tutor===user)
+    :paresDeColegio(cid).find(p=>p.apo===apo);
+  DB.clases.push({id:DB.nextId++,fecha:document.getElementById('fFecha').value,
+    materia:document.getElementById('fMateria').value,apoderado:apo,
+    tutor:role==='tutor'?user:(par?par.tutor:''),codigo:par?par.cod:'',colegio:cid,
+    tipo,alumnos:al,modalidad:mod,duracion:dur,
+    precioApo:parseInt(document.getElementById('fPrecioApo').value)||0,
+    sueldo:parseInt(document.getElementById('fSueldo').value)||0,
+    obs:document.getElementById('fObs').value});
+  saveDB();closeModal();
+  if(role==='superadmin')setTimeout(filtrar,30);
+  else if(role==='coordinador')showView('clases-coord');
+  else showView('mis-clases');
+}
+
+// ── Parejas helpers ──
+function genCodigo(apo,tutor){
+  const a=(apo.trim()[0]||'X').toUpperCase();
+  const t=(tutor.trim()[0]||'X').toUpperCase();
+  const base=a+t;
+  const existing=getPARES().filter(p=>p.cod.startsWith(base)).map(p=>parseInt(p.cod.slice(2))||0);
+  const num=existing.length?Math.max(...existing)+1:1;
+  return base+num;
+}
+
+function agregarPareja(){
+  const apo=document.getElementById('newApo').value.trim();
+  const tutor=document.getElementById('newTutor').value.trim();
+  if(!apo||!tutor){alert('Ingresa ambos nombres');return}
+  const cid=role==='coordinador'?currentColegio:(document.getElementById('fParColegio')?document.getElementById('fParColegio').value:'aleman');
+  const exists=getPARES().find(p=>p.apo.toLowerCase()===apo.toLowerCase()&&p.tutor.toLowerCase()===tutor.toLowerCase()&&p.colegio===cid);
+  if(exists){alert('Esta pareja ya existe: '+exists.cod);return}
+  const cod=genCodigo(apo,tutor);
+  const apoEmailInput=document.getElementById('newApoEmail');
+  const apoEmail=apoEmailInput?apoEmailInput.value.trim():'';
+  if(!DB.pares)DB.pares=[];
+  DB.pares.push({cod,apo,tutor,colegio:cid,apoEmail});
+  saveDB();
+  alert(`Pareja agregada. Código: ${cod}\n${tutor} puede ingresar como Tutor y ${apo} como Apoderado en ${colNombre(cid)}.`);
+  showView(role==='coordinador'?'pares-coord':'pares-admin');
+}
+
+function eliminarPareja(cod){
+  if(!confirm('¿Eliminar esta pareja?'))return;
+  DB.pares=getPARES().filter(p=>p.cod!==cod);saveDB();
+  showView(role==='coordinador'?'pares-coord':'pares-admin');
+}
+
+
+function rMiPerfil(){
+  const par=getPARES().find(p=>p.apo===user&&(p.colegio===currentColegio||(!p.colegio&&currentColegio==='aleman')));
+  const emailActual=par&&par.apoEmail?par.apoEmail:'';
+  return`<div class="content">
+  <div class="card" style="max-width:480px">
+    <div class="card-header"><h3>Mi perfil</h3></div>
+    <div style="padding:20px">
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;padding:14px;background:#f9f9f9;border-radius:8px">
+        <span class="avatar ${avc(user)}" style="width:44px;height:44px;font-size:16px;flex-shrink:0">${ini(user)}</span>
+        <div>
+          <div style="font-weight:600;font-size:15px">${user}</div>
+          <div style="font-size:12px;color:#888;margin-top:2px">${colNombre(currentColegio)}</div>
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:16px">
+        <label>Mi email (para recibir cobros mensuales)</label>
+        <input type="email" id="apoEmailInput" value="${emailActual}" placeholder="mi@email.com"
+          style="padding:10px 12px;border:1px solid #e5e5e5;border-radius:7px;font-size:14px;width:100%;outline:none">
+        <div style="font-size:11px;color:#888;margin-top:6px">El coordinador usará este email para enviarte el cobro mensual.</div>
+      </div>
+      <button onclick="saveApoEmail()" class="btn btn-primary" style="width:100%;padding:10px">
+        Guardar email
+      </button>
+      ${emailActual?`<div style="margin-top:12px;padding:10px 14px;background:#f0fdf4;border-radius:8px;font-size:12px;color:#166534">
+        ✓ Email registrado: <strong>${emailActual}</strong>
+      </div>`:'<div style="margin-top:12px;padding:10px 14px;background:#fef9c3;border-radius:8px;font-size:12px;color:#854d0e">⚠ Aún no tienes email registrado. Agrégalo para recibir tus cobros mensuales.</div>'}
+    </div>
+  </div></div>`;
+}
+
+function saveApoEmail(){
+  const email=document.getElementById('apoEmailInput').value.trim();
+  if(!email){alert('Ingresa un email válido');return}
+  if(!/^[^@]+@[^@]+\.[^@]+$/.test(email)){alert('El formato del email no es válido');return}
+  // Update all pairs for this apoderado in this colegio
+  let updated=0;
+  getPARES().forEach(p=>{
+    if(p.apo===user&&(p.colegio===currentColegio||(!p.colegio&&currentColegio==='aleman'))){
+      p.apoEmail=email;
+      updated++;
+    }
+  });
+  if(updated===0){alert('No se encontraron parejas para actualizar');return}
+  saveDB();
+  alert('✓ Email guardado correctamente. El coordinador podrá enviarte los cobros mensuales a '+email);
+  showView('mi-perfil');
+}
+
+
+function buildCobroEmail(apo, clases, total, colegio_id){
+  const apoEmail=getApoEmail(apo, colegio_id);
+  if(!apoEmail) return null;
+  const mes=MESES[selMonth];
+  const yr=selYear;
+  const colNom=colNombre(colegio_id);
+  const detalle=clases.map(c=>`- ${fmtD(c.fecha)} | ${c.materia} | ${c.tutor} | ${durLabel(c.duracion)} | ${fmt(c.precioApo)}`).join('\n');
+  const subject=`Cobro clases ${mes} ${yr} — ${apo}`;
+  const body=`Estimado/a ${apo},
+
+Le informamos que el total a pagar por las clases del mes de ${mes} ${yr} es:
+
+Total: ${fmt(total)}
+
+Detalle de clases:
+${detalle}
+
+Favor realizar el pago a la brevedad y responder este correo para confirmar.
+
+Saludos,
+${colNom}`;
+  // Use Gmail compose URL — works directly in browser without needing a mail client
+  const gmailUrl=`https://mail.google.com/mail/?view=cm&to=${encodeURIComponent(apoEmail)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  return gmailUrl;
+}
+
+function enviarTodosLosCobros(colegio_id){
+  const cl=monthClasesColegio(colegio_id);
+  const bA={};
+  cl.forEach(c=>{
+    if(!bA[c.apoderado])bA[c.apoderado]={cl:[],t:0};
+    bA[c.apoderado].cl.push(c);bA[c.apoderado].t+=c.precioApo;
+  });
+  const apos=Object.keys(bA);
+  if(!apos.length){alert('No hay clases este mes para enviar cobros.');return}
+  
+  const sinEmail=apos.filter(a=>!getApoEmail(a,colegio_id));
+  const conEmail=apos.filter(a=>getApoEmail(a,colegio_id));
+  
+  if(!conEmail.length){
+    alert('Ningún apoderado tiene email registrado.\nPídeles que ingresen su email en "Mi perfil".');
+    return;
+  }
+  
+  const msg=sinEmail.length
+    ?`Se enviarán cobros a ${conEmail.length} apoderado(s).\n\n⚠ ${sinEmail.length} sin email: ${sinEmail.join(', ')}\n\n¿Continuar?`
+    :`Se enviarán cobros a ${conEmail.length} apoderado(s).\n¿Continuar?`;
+  
+  if(!confirm(msg)) return;
+  
+  // Open Gmail compose for each apoderado with delay
+  // Note: browser may ask to allow popups on first use
+  if(conEmail.length>1){
+    alert('Se abrirá Gmail '+conEmail.length+' veces (una por apoderado).\nSi el navegador bloquea las ventanas emergentes, permite los popups para este sitio.');
+  }
+  conEmail.forEach((apo,i)=>{
+    setTimeout(()=>{
+      const link=buildCobroEmail(apo,bA[apo].cl,bA[apo].t,colegio_id);
+      if(link) window.open(link,'_blank');
+    }, i*1200);
+  });
+}
+
+document.getElementById('claseModal').addEventListener('click',function(e){if(e.target===this)closeModal()});
+</script>
+</body>
+</html>
