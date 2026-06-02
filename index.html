@@ -437,10 +437,7 @@ const SEED_DATA = {clases:[
   {cod:'FM1',apo:'Felipe Madrid',tutor:'Martina Vielma',colegio:'aleman'}
 ]};
 SEED_DATA.colegios = [
-  {id:'aleman', nombre:'Colegio Alemán', coordinador:''},
-  {id:'alianza', nombre:'Alianza Francesa', coordinador:''},
-  {id:'nolasco', nombre:'San Pedro Nolasco', coordinador:''},
-  {id:'universitaria', nombre:'Universitaria', coordinador:''}
+  {id:'aleman', nombre:'Colegio Alemán', coordinador:''}
 ];
 
 const T1 = {
@@ -477,8 +474,17 @@ function calcPrecio(tipo,mod,al,factor){
 let DB=null;
 let role=null,user=null,curView=null,currentColegio=null;
 let selMonth=new Date().getMonth(),selYear=new Date().getFullYear();
+function initSelMonth(){
+  // If no clases in current month, default to last month that has data
+  const cur=DB.clases.filter(c=>{const d=parseDate(c.fecha);return d.getMonth()===selMonth&&d.getFullYear()===selYear});
+  if(!cur.length&&DB.clases.length){
+    const dates=DB.clases.map(c=>parseDate(c.fecha)).sort((a,b)=>b-a);
+    selMonth=dates[0].getMonth();
+    selYear=dates[0].getFullYear();
+  }
+}
 function getSelYears(){
-  const years=new Set([...(DB&&DB.clases?DB.clases:[]).map(c=>new Date(c.fecha).getFullYear())]);
+  const years=new Set([...(DB&&DB.clases?DB.clases:[]).map(c=>parseDate(c.fecha).getFullYear())]);
   const cur=new Date().getFullYear();
   years.add(cur);years.add(cur+1);years.add(cur+2);
   return [...years].sort();
@@ -516,6 +522,7 @@ function loadApp(){
     }
     document.getElementById('loadingScreen').style.display='none';
     document.getElementById('loginScreen').style.display='flex';
+    initSelMonth();
     // Populate login stats
     const sc=document.getElementById('statClases');if(sc)sc.textContent=DB.clases?DB.clases.length:'—';
     const st=document.getElementById('statTutores');if(st)st.textContent=DB.pares?[...new Set(DB.pares.map(p=>p.tutor))].length:'—';
@@ -531,6 +538,8 @@ loadApp();
 // ── Helpers ──
 function fmt(n){return'$'+Math.round(n).toLocaleString('es-CL')}
 function fmtD(s){if(!s)return'';const d=new Date(s+'T12:00');return d.toLocaleDateString('es-CL',{day:'2-digit',month:'short',year:'numeric'})}
+function localDateStr(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function parseDate(s){return new Date(s+'T12:00')}
 function ini(n){return(n||'?').split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase()}
 const AVC=['av-blue','av-purple','av-green','av-orange'];
 function avc(n){return AVC[(n||'').charCodeAt(0)%4]}
@@ -554,8 +563,8 @@ function colNombre(id){return(getColegios().find(c=>c.id===id)||{nombre:id}).nom
 function getPARES(){return DB.pares||[]}
 function paresDeColegio(cid){return getPARES().filter(p=>p.colegio===cid||(cid==='aleman'&&!p.colegio))}
 function clasesDeColegio(cid){return DB.clases.filter(c=>c.colegio===cid||(cid==='aleman'&&!c.colegio))}
-function monthClases(){return DB.clases.filter(c=>{const d=new Date(c.fecha);return d.getMonth()===selMonth&&d.getFullYear()===selYear})}
-function monthClasesColegio(cid){return clasesDeColegio(cid).filter(c=>{const d=new Date(c.fecha);return d.getMonth()===selMonth&&d.getFullYear()===selYear})}
+function monthClases(){return DB.clases.filter(c=>{const d=parseDate(c.fecha);return d.getMonth()===selMonth&&d.getFullYear()===selYear})}
+function monthClasesColegio(cid){return clasesDeColegio(cid).filter(c=>{const d=parseDate(c.fecha);return d.getMonth()===selMonth&&d.getFullYear()===selYear})}
 
 // ── Login ──
 function selectRole(r){
@@ -976,7 +985,7 @@ function filtrar(){
     if(col&&c.colegio!==col&&!(col==='aleman'&&!c.colegio))return false;
     if(apo&&c.apoderado!==apo)return false;
     if(tut&&c.tutor!==tut)return false;
-    if(mes!==''){const[mm,yy]=mes.split('-');if(new Date(c.fecha).getMonth()!==parseInt(mm)||new Date(c.fecha).getFullYear()!==parseInt(yy))return false;}
+    if(mes!==''){const[mm,yy]=mes.split('-');if(parseDate(c.fecha).getMonth()!==parseInt(mm)||parseDate(c.fecha).getFullYear()!==parseInt(yy))return false;}
     if(q&&!JSON.stringify(c).toLowerCase().includes(q.toLowerCase()))return false;
     return true;
   }).sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
@@ -1120,7 +1129,7 @@ function togglePagoTutor(tutor){
   if(DB.pagosTutores[k]){
     delete DB.pagosTutores[k];
   } else {
-    DB.pagosTutores[k]={pagado:true,fecha:new Date().toISOString().split('T')[0],por:user};
+    DB.pagosTutores[k]={pagado:true,fecha:localDateStr(),por:user};
   }
   saveDB();
   showView('pagos-coord');
@@ -1350,7 +1359,7 @@ function rApoderadosCoord(){
 
 function rMisClases(){
   const mc=DB.clases.filter(c=>c.tutor===user).sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
-  const mesC=mc.filter(c=>{const d=new Date(c.fecha);return d.getMonth()===selMonth&&d.getFullYear()===selYear});
+  const mesC=mc.filter(c=>{const d=parseDate(c.fecha);return d.getMonth()===selMonth&&d.getFullYear()===selYear});
   return`<div class="content">
   <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">
     <div class="stat-card"><div class="stat-label">Clases este mes</div><div class="stat-value">${mesC.length}</div></div>
@@ -1376,7 +1385,7 @@ function rNuevaClase(){
   const mp=paresDeColegio(currentColegio).filter(p=>p.tutor===user);
   return`<div class="content"><div class="card" style="max-width:560px"><div class="card-header"><h3>Nueva clase</h3></div>
   <div class="modal-body"><div class="form-grid">
-    <div class="form-group"><label>Fecha</label><input type="date" id="nFecha" value="${new Date().toISOString().split('T')[0]}"></div>
+    <div class="form-group"><label>Fecha</label><input type="date" id="nFecha" value="${localDateStr()}"></div>
     <div class="form-group"><label>Materia</label><select id="nMateria"><option>Matemáticas</option><option>Inglés</option><option>Biología</option><option>Física</option><option>Historia</option><option>Química</option><option>Alemán</option><option>Otro</option></select></div>
     <div class="form-group full"><label>Apoderado</label><select id="nApo">${mp.map(p=>`<option value="${p.apo}">${p.apo} (${p.cod})</option>`).join('')}</select></div>
     <div class="form-group"><label>Tipo</label><select id="nTipo">${tiposParaColegio(currentColegio).map(t=>`<option value="${t.v}">${t.l}</option>`).join('')}</select></div>
@@ -1407,7 +1416,7 @@ function guardarTutor(){
 
 function rMisPagos(){
   const pm={};DB.clases.filter(c=>c.tutor===user).forEach(c=>{
-    const d=new Date(c.fecha);const k=`${d.getFullYear()}-${d.getMonth()}`;
+    const d=parseDate(c.fecha);const k=`${d.getFullYear()}-${d.getMonth()}`;
     if(!pm[k])pm[k]={mes:d.getMonth(),yr:d.getFullYear(),cl:0,t:0};pm[k].cl++;pm[k].t+=c.sueldo;
   });
   return`<div class="content"><div class="card"><table>
@@ -1448,7 +1457,7 @@ function getCoordEmail(){
 
 function rMiResumen(){
   const pm={};DB.clases.filter(c=>c.apoderado===user).forEach(c=>{
-    const d=new Date(c.fecha);const k=`${d.getFullYear()}-${d.getMonth()}`;
+    const d=parseDate(c.fecha);const k=`${d.getFullYear()}-${d.getMonth()}`;
     if(!pm[k])pm[k]={mes:d.getMonth(),yr:d.getFullYear(),cl:[],t:0};pm[k].cl.push(c);pm[k].t+=c.precioApo;
   });
   const coordEmail=getCoordEmail();
@@ -1508,7 +1517,7 @@ function openModal(){
   refreshModalApos();
   const cid2=document.getElementById('fColegio')?document.getElementById('fColegio').value:currentColegio;
   updateTipoSelect(cid2);
-  document.getElementById('fFecha').value=new Date().toISOString().split('T')[0];
+  document.getElementById('fFecha').value=localDateStr();
   recalc();
   document.getElementById('claseModal').classList.add('open');
 }
