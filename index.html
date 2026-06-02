@@ -855,39 +855,9 @@ function rPagosGlobal(){
 }
 
 // ── Super admin: register coordinators per colegio ──
-function reimportarSeed(){
-  if(!confirm('¿Reimportar clases y parejas desde el seed?\n\nEsto REEMPLAZARÁ todas las clases y parejas actuales en Firebase con los datos del Excel cargado en el código.\n\nLas contraseñas de coordinadores y colegios se mantendrán.'))return;
-  // Preserve passwords from current colegios
-  const pwMap={};
-  getColegios().forEach(c=>{if(c.password)pwMap[c.id]=c.password});
-  // Reset clases and pares from seed, keep colegios with passwords
-  DB.clases=JSON.parse(JSON.stringify(SEED_DATA.clases));
-  DB.pares=JSON.parse(JSON.stringify(SEED_DATA.pares));
-  DB.nextId=SEED_DATA.nextId;
-  // Restore colegios preserving passwords
-  const seedCols=JSON.parse(JSON.stringify(SEED_DATA.colegios));
-  seedCols.forEach(c=>{if(pwMap[c.id])c.password=pwMap[c.id]});
-  // Keep any extra colegios that were added after seed
-  const seedIds=new Set(seedCols.map(c=>c.id));
-  const extraCols=(DB.colegios||[]).filter(c=>!seedIds.has(c.id));
-  DB.colegios=[...seedCols,...extraCols];
-  saveDB();
-  alert('✓ Reimportación completada.\n'+DB.clases.length+' clases y '+DB.pares.length+' parejas cargadas desde el seed.');
-  showView('colegios');
-}
-
 function rColegios(){
   const cols=getColegios();
   return`<div class="content">
-  <div style="background:#fff3cd;border:1px solid #ffc107;border-radius:10px;padding:16px 20px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;gap:20px">
-    <div>
-      <div style="font-size:13px;font-weight:600;color:#856404;margin-bottom:3px">⚠ Reimportar desde Excel</div>
-      <div style="font-size:12px;color:#856404">Reemplaza todas las clases y parejas en Firebase con los datos del último Excel cargado al código. Las contraseñas de coordinadores se conservan.</div>
-    </div>
-    <button onclick="reimportarSeed()" style="flex-shrink:0;padding:9px 18px;background:#d97706;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;white-space:nowrap">
-      🔄 Reimportar datos
-    </button>
-  </div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
     <div class="card">
       <div class="card-header"><h3>Agregar colegio</h3></div>
