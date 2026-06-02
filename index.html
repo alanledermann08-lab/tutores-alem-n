@@ -116,7 +116,66 @@ tr:hover td{background:#fafafa}
 .pw-wrap input{width:100%;padding:10px 12px;border:1px solid #e5e5e5;border-radius:7px;font-size:14px;outline:none;margin-bottom:10px}
 .pw-wrap input:focus{border-color:#2563eb}
 .err-msg{color:#dc2626;font-size:12px;margin-bottom:10px;display:none}
-@media(max-width:768px){.login-left{display:none}.login-right{width:100%;padding:40px 28px}}
+
+/* ── MOBILE OVERLAY MENU ── */
+#mobileMenuBtn{display:none;position:fixed;top:12px;left:12px;z-index:300;width:40px;height:40px;border-radius:10px;background:#2563eb;border:none;cursor:pointer;align-items:center;justify-content:center;flex-direction:column;gap:5px}
+#mobileMenuBtn span{display:block;width:18px;height:2px;background:#fff;border-radius:2px;transition:.2s}
+#mobileOverlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:150}
+#mobileOverlay.open{display:block}
+
+@media(max-width:768px){
+  /* Login */
+  .login-left{display:none}
+  .login-right{width:100%;padding:32px 20px}
+  .login-box-title{font-size:22px}
+
+  /* App layout */
+  .sidebar{transform:translateX(-100%);transition:transform .25s;z-index:200;width:260px}
+  .sidebar.mobile-open{transform:translateX(0)}
+  .main{margin-left:0}
+  #mobileMenuBtn{display:flex}
+  .topbar{padding:0 16px 0 60px;height:48px}
+  .topbar h2{font-size:14px}
+  .content{padding:14px 14px}
+
+  /* Stats grids — stack to 2 cols on mobile */
+  .stats-grid{grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+  .stat-value{font-size:18px}
+  .stat-card{padding:12px}
+
+  /* Tables — horizontal scroll */
+  .card{overflow-x:auto}
+  table{min-width:500px}
+
+  /* Forms */
+  .form-grid{grid-template-columns:1fr}
+  .form-group.full{grid-column:1}
+
+  /* Modal */
+  .modal{width:100%;max-width:100vw;border-radius:12px 12px 0 0;position:fixed;bottom:0;max-height:92vh}
+  .modal-overlay.open{align-items:flex-end}
+
+  /* Filter row */
+  .filter-row{gap:6px}
+  .filter-row select,.filter-row input{font-size:12px;padding:6px 8px}
+
+  /* Topbar actions */
+  .topbar-actions .btn{font-size:12px;padding:5px 10px}
+  .topbar-actions select{font-size:12px;padding:5px 8px}
+
+  /* Two-column grids inside content */
+  div[style*="grid-template-columns:1fr 1fr"]{grid-template-columns:1fr !important}
+  div[style*="grid-template-columns:repeat(4"]{grid-template-columns:1fr 1fr !important}
+  div[style*="grid-template-columns:repeat(3"]{grid-template-columns:1fr 1fr !important}
+  div[style*="grid-template-columns:1fr 1fr 1fr"]{grid-template-columns:1fr 1fr !important}
+
+  /* Price preview */
+  .pp-grid{grid-template-columns:1fr 1fr !important}
+
+  /* Tutor cards */
+  .tutor-card-header{flex-direction:column;align-items:flex-start;gap:10px}
+  .tutor-stats{gap:20px}
+}
 </style>
 </head>
 <body>
@@ -206,7 +265,11 @@ tr:hover td{background:#fafafa}
 </div>
 
 <div id="app" style="display:none">
-<div class="sidebar">
+<button id="mobileMenuBtn" onclick="toggleMobileMenu()">
+  <span></span><span></span><span></span>
+</button>
+<div id="mobileOverlay" onclick="closeMobileMenu()"></div>
+<div class="sidebar" id="sidebar">
   <div class="logo"><h1 id="logoTitle">Tutores</h1><p id="sidebarRole"></p></div>
   <nav id="sidebarNav"></nav>
   <div class="sidebar-footer">
@@ -633,6 +696,15 @@ function selectLoginUser(name){
 }
 
 // Close dropdown when clicking outside
+function toggleMobileMenu(){
+  document.getElementById('sidebar').classList.toggle('mobile-open');
+  document.getElementById('mobileOverlay').classList.toggle('open');
+}
+function closeMobileMenu(){
+  document.getElementById('sidebar').classList.remove('mobile-open');
+  document.getElementById('mobileOverlay').classList.remove('open');
+}
+
 document.addEventListener('click',function(e){
   const dd=document.getElementById('loginUserDropdown');
   if(dd&&!dd.contains(e.target)&&e.target.id!=='loginUserInput')dd.style.display='none';
@@ -723,7 +795,7 @@ function setupSidebar(){
     sec.items.forEach(it=>{
       const d=document.createElement('div');d.className='nav-item';d.dataset.view=it.id;
       d.innerHTML=`<span>${it.ic}</span><span>${it.lbl}</span>`;
-      d.onclick=()=>showView(it.id);nav.appendChild(d);
+      d.onclick=()=>{showView(it.id);closeMobileMenu()};nav.appendChild(d);
     });
   });
   showView((defs[role]||[{items:[{id:'dash-global'}]}])[0].items[0].id);
