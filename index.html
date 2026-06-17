@@ -148,7 +148,7 @@ tr:hover td{background:#fafafa}
       <p>Sistema de registro de clases</p>
     </div>
   </div>
-  <p style="font-size:11px;color:#16a34a;font-weight:600;margin:2px 0 8px">✓ Versión 3.0 · 13 jun 2026 (clase cancelada + todo lo anterior)</p>
+  <p style="font-size:11px;color:#16a34a;font-weight:600;margin:2px 0 8px">✓ Versión 3.1 · 17 jun 2026 (guardado a prueba de pérdidas + todo lo anterior)</p>
   <p style="font-size:11px;color:#aaa;font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px">Ingresar como</p>
   <div class="role-list">
     <div class="role-btn" id="rbsuperadmin" onclick="selectRole('superadmin')">
@@ -217,7 +217,7 @@ tr:hover td{background:#fafafa}
     <div id="sidebarUser" style="font-weight:500;color:#555;font-size:12px;margin-bottom:4px"></div>
     <div id="sidebarColegio" style="font-size:11px;color:#888;margin-bottom:4px"></div>
     <div onclick="logout()" style="cursor:pointer;color:#aaa;font-size:11px">Cerrar sesión</div>
-    <div style="font-size:10px;color:#16a34a;margin-top:8px">v3.0 · 13 jun 2026</div>
+    <div style="font-size:10px;color:#16a34a;margin-top:8px">v3.1 · 17 jun 2026</div>
   </div>
 </div>
 <div class="main">
@@ -302,6 +302,9 @@ const ADMIN_PW = "alan2024";
 const COORD_PW = "coord2024";
 const TUTOR_PW = "tutor2024";
 const APO_PW = "apod2024";
+// Número de versión del código. Se sube cada vez que se publica una versión nueva.
+// Sirve para que los dispositivos con una versión vieja en caché se recarguen solos.
+const APP_VERSION = 31;
 const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
 const SEED_DATA = {clases:[
@@ -496,11 +499,35 @@ function savePares(){
   const pares=JSON.parse(JSON.stringify(DB.pares||[]));
   fbDB.ref('/pares').set(pares).catch(e=>alert('Error guardando parejas: '+e.message));
 }
+// Guarda UNA clase en su propio nodo /clases/<id>. No toca las demás clases,
+// así dos tutores pueden registrar a la vez sin pisarse.
+function saveClaseNode(c){
+  return fbDB.ref('/clases/'+c.id).set(JSON.parse(JSON.stringify(c)));
+}
+// Borra UNA clase de su nodo. No reescribe la lista completa.
+function removeClaseNode(id){
+  return fbDB.ref('/clases/'+id).remove().catch(e=>alert('Error Firebase: '+e.message));
+}
 function resetDB(){if(confirm('¿Resetear datos?')){fbDB.ref('/').remove().then(()=>location.reload());}}
 
 function loadApp(){
   fbDB.ref('/').once('value').then(snap=>{
     const data=snap.val();
+    // ── Comprobación de versión ──
+    // Si la base tiene registrada una versión MÁS NUEVA que la de este dispositivo,
+    // significa que este navegador tiene una versión vieja en caché → se recarga solo
+    // (limpiando caché con un parámetro nuevo en la URL). Usamos un seguro para no quedar en bucle.
+    const serverV=(data&&typeof data.appVersion==='number')?data.appVersion:0;
+    if(serverV>APP_VERSION){
+      const flag='reloadTried_'+serverV;
+      if(!sessionStorage.getItem(flag)){
+        sessionStorage.setItem(flag,'1');
+        location.replace(location.pathname+'?v='+serverV+'-'+Date.now());
+        return;
+      }
+    }
+    // Si este dispositivo trae la versión más nueva vista hasta ahora, la dejamos registrada.
+    if(APP_VERSION>serverV)fbDB.ref('/appVersion').set(APP_VERSION);
     if(data){
       // Ya existe información: la usamos tal cual, SIN sobrescribir con datos por defecto.
       DB=data;
@@ -512,11 +539,28 @@ function loadApp(){
       if(!DB.colegios)DB.colegios=JSON.parse(JSON.stringify(SEED_DATA.colegios));
       const maxId=DB.clases.reduce((m,c)=>Math.max(m,c.id||0),0);
       if(!DB.nextId||DB.nextId<=maxId)DB.nextId=maxId+1;
+      // Migración única: guardar las clases indexadas por su id (/clases/<id>) en vez de como lista.
+      // Antes la lista entera se reescribía al guardar, lo que podía borrar la clase de otro tutor.
+      if(data.schema!==2){
+        const byId={};
+        DB.clases.forEach(c=>{
+          if(c.id===undefined||c.id===null||byId[c.id])c.id=uid();
+          byId[c.id]=JSON.parse(JSON.stringify(c));
+        });
+        fbDB.ref('/clases').set(byId);
+        fbDB.ref('/schema').set(2);
+        DB.clases=Object.values(byId);
+      }
     }else{
       // Base completamente vacía (primera vez): sembramos los datos iniciales.
       DB=JSON.parse(JSON.stringify(SEED_DATA));
       DB.colegios=JSON.parse(JSON.stringify(SEED_DATA.colegios));
-      fbDB.ref('/').set(DB);
+      const byId={};DB.clases.forEach(c=>{byId[c.id]=c});
+      DB.schema=2;
+      DB.appVersion=APP_VERSION;
+      const toWrite=JSON.parse(JSON.stringify(DB));
+      toWrite.clases=byId;
+      fbDB.ref('/').set(toWrite);
     }
     document.getElementById('loadingScreen').style.display='none';
     document.getElementById('loginScreen').style.display='flex';
@@ -533,6 +577,9 @@ function fmt(n){return'$'+Math.round(n).toLocaleString('es-CL')}
 // Extraen mes (0-11) y año directo del string 'YYYY-MM-DD' para evitar el desfase de zona horaria
 function mesDe(f){return parseInt((f||'').slice(5,7),10)-1}
 function anioDe(f){return parseInt((f||'').slice(0,4),10)}
+// Identificador único global (timestamp + azar). Evita que dos tutores que registran
+// al mismo tiempo generen el mismo id y que una clase pise a otra.
+function uid(){return Date.now()*1000+Math.floor(Math.random()*1000)}
 function fmtD(s){if(!s)return'';const d=new Date(s+'T12:00');return d.toLocaleDateString('es-CL',{day:'2-digit',month:'short',year:'numeric'})}
 function ini(n){return(n||'?').split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase()}
 const AVC=['av-blue','av-purple','av-green','av-orange'];
@@ -1052,7 +1099,7 @@ function filtrar(){
   </tr>`).join('')||'<tr><td colspan="11" style="text-align:center;color:#aaa;padding:32px">Sin clases</td></tr>';
 }
 
-function delClase(id){if(!confirm('¿Eliminar?'))return;DB.clases=DB.clases.filter(c=>c.id!==id);saveClases();filtrar()}
+function delClase(id){if(!confirm('¿Eliminar?'))return;DB.clases=DB.clases.filter(c=>c.id!==id);removeClaseNode(id);filtrar()}
 
 function rParesAdmin(){
   return`<div class="content">
@@ -1351,7 +1398,7 @@ function rClasesCoord(){
   </div></div>`;
 }
 
-function delClaseCoord(id){if(!confirm('¿Eliminar?'))return;DB.clases=DB.clases.filter(c=>c.id!==id);saveClases();showView('clases-coord')}
+function delClaseCoord(id){if(!confirm('¿Eliminar?'))return;DB.clases=DB.clases.filter(c=>c.id!==id);removeClaseNode(id);showView('clases-coord')}
 
 function rParesCoord(){
   const pares=paresDeColegio(currentColegio);
@@ -1472,7 +1519,7 @@ function rTutorDetalleCoord(t){
 function delClaseDetalleCoord(id){
   if(!confirm('¿Eliminar esta clase? Esta acción no se puede deshacer.'))return;
   DB.clases=DB.clases.filter(c=>c.id!==id);
-  saveClases();
+  removeClaseNode(id);
   showView('tutores-coord');
 }
 
@@ -1577,7 +1624,7 @@ function rApoderadoDetalleCoord(a){
 function delClaseApoDetalleCoord(id){
   if(!confirm('¿Eliminar esta clase? Esta acción no se puede deshacer.'))return;
   DB.clases=DB.clases.filter(c=>c.id!==id);
-  saveClases();
+  removeClaseNode(id);
   showView('apoderados-coord');
 }
 
@@ -1639,7 +1686,7 @@ function rMisClases(){
   </tbody></table></div></div>`;
 }
 
-function delClaseTutor(id){if(!confirm('¿Eliminar?'))return;DB.clases=DB.clases.filter(c=>c.id!==id);saveClases();showView('mis-clases')}
+function delClaseTutor(id){if(!confirm('¿Eliminar?'))return;DB.clases=DB.clases.filter(c=>c.id!==id);removeClaseNode(id);showView('mis-clases')}
 
 function rNuevaClase(){
   const mp=paresDeColegio(currentColegio).filter(p=>p.tutor===user);
@@ -1681,17 +1728,16 @@ function guardarTutor(){
   const al=document.getElementById('nAlumnos').value;
   const dur=parseFloat(document.getElementById('nDur').value);
   const p=calcPrecio(tipo,mod,al,dur);
-  const nueva={id:DB.nextId++,fecha:fecha,
+  const nueva={id:uid(),fecha:fecha,
     materia:document.getElementById('nMateria').value,apoderado:apo,tutor:user,
     codigo:par?par.cod:'',colegio:currentColegio,tipo,alumnos:parseInt(al),modalidad:mod,duracion:dur,
     precioApo:p.p,sueldo:p.s,obs:document.getElementById('nObs').value};
   DB.clases.push(nueva);
-  saveClases().then(function(){
+  saveClaseNode(nueva).then(function(){
     alert('✓ Clase registrada y guardada correctamente');
     showView('mis-clases');
   }).catch(function(err){
     DB.clases=DB.clases.filter(function(c){return c!==nueva});
-    DB.nextId--;
     alert('⚠ No se pudo guardar la clase. Revisa tu conexión a internet e intenta registrarla de nuevo.\n\n(Detalle: '+(err&&err.message||err)+')');
   });
 }
@@ -1870,7 +1916,7 @@ function saveClase(){
   const par=role==='tutor'
     ?paresDeColegio(cid).find(p=>p.apo===apo&&p.tutor===user)
     :paresDeColegio(cid).find(p=>p.apo===apo);
-  const nueva={id:DB.nextId++,fecha:fecha,
+  const nueva={id:uid(),fecha:fecha,
     materia:document.getElementById('fMateria').value,apoderado:apo,
     tutor:role==='tutor'?user:(par?par.tutor:''),codigo:par?par.cod:'',colegio:cid,
     tipo,alumnos:al,modalidad:mod,duracion:dur,
@@ -1878,7 +1924,7 @@ function saveClase(){
     sueldo:parseInt(document.getElementById('fSueldo').value)||0,
     obs:document.getElementById('fObs').value};
   DB.clases.push(nueva);
-  saveClases().then(function(){
+  saveClaseNode(nueva).then(function(){
     closeModal();
     if(role==='superadmin')setTimeout(filtrar,30);
     else if(role==='coordinador')showView('clases-coord');
@@ -1886,7 +1932,6 @@ function saveClase(){
     alert('✓ Clase registrada y guardada correctamente');
   }).catch(function(err){
     DB.clases=DB.clases.filter(function(c){return c!==nueva});
-    DB.nextId--;
     alert('⚠ No se pudo guardar la clase. Revisa tu conexión a internet e intenta de nuevo.\n\n(Detalle: '+(err&&err.message||err)+')');
   });
 }
